@@ -1,0 +1,489 @@
+event startup
+begin
+ SetLangMode(LangLithuanian,"LIT",0);
+  Report("Vaìtaraä‹i÷ registravimo ìurnalas",VaztRegJRClass,VaztRegJRn,0,modSL);
+end;
+
+
+event DefineWindows
+begin
+  real h,h1,hl,h2,h3,h4,h5,h6,h7,hs,v,vm,l,vs,f,v2,t;
+  SetLangMode(LangLithuanian,"LIT",0);
+  WindowBegin("Vaìtaraä‹i÷ registravimo ìurnalas",VaztRegJRClass,CGRcW,RcType);
+  SetWRect(20,80,350,280);
+  v = 6; vs = 20; h = 120;
+//  EditFieldTL(h,v,60,"Data",M4Date,Normal,0,d1,false,PasteCurDate);
+  PeriodField(h,v,"Periodas");
+
+//  EditFieldTL(h,v2=(v+=vs),100,"Prek˜",M4UStr,Normal,41,f1,false,INSClass);
+//  EditFieldTL(h,v+=vs,150,"Grup˜",M4UStr,Normal,11,f3,false,ITSClass);
+//  EditFieldTL(h,v+=vs,100,"Patalpa",M4UStr,Normal,10,f2,false,LocationSClass);
+  ButtonFrame(h,v+=50,123,1,"Funkcija 1");
+  CheckBox(h,v,0,"Su tekstu",flags[1]);
+  EndWindow;
+  return;
+end;
+
+global
+procedure VaztRegJRn(record RcVc RepSpec)
+BEGIN
+  record INVc INr;
+  record IVVc IVr;
+  Row IVVc IVrw;
+
+  string 255 tstr;
+  Boolean TrHs,fnd1,fnd2,fndloc;
+  Integer i,rwcnt,nr,rw;
+  record CYBlock CYr;
+
+    StartReportNoHeaderJob("Vaìtaraä‹i÷ registravimo ìurnalas");
+    EndHeader;
+
+  blockload(CYr);
+
+if (Repspec.flags[1] ==1) then begin
+
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+  tstr = CYr.CompName & ", ¯m. kodas  " & CYr.OrgNr;
+  OutString(150,0,tstr,false);
+  EndFormat;
+
+  Black_Divider(0,1);
+
+  StartFormat(15);
+  tstr="(ðkio subjekto pavadinimas ir identifikacinis numeris (kodas))";
+  OutString(120,0,tstr,false);
+  EndFormat;
+
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+
+  Black_Divider(0,1);
+
+  StartFormat(15);
+  tstr="(vaìtaraä‹ius iäraäan‹io padalinio pavadinimas, adresas ir vadovo suteiktas numeris. Padalinio duomenys nurodomi";
+  OutString(50,0,tstr,false);
+  EndFormat;
+
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+
+  Black_Divider(0,1);
+
+  StartFormat(15);
+  tstr="tada, kai vaìtaraä‹iai iäraäomi daugiau kaip viename ðkio subjekto padalinyje)";
+  OutString(100,0,tstr,false);
+  EndFormat;
+
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+
+    StartFormat(15);
+    OutString(150,0,"VAëTARAá‰Iö REGISTRAVIMO",false);
+    EndFormat;
+    StartFormat(15);
+    OutString(180,0,"ëURNALAS",false);
+    EndFormat;
+
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+
+    StartFormat(15);
+    OutString(150,0,"Prad˜ta pildyti",false);
+    OutDate(200,0,RepSpec.sStartDate,false);
+    EndFormat;
+    StartFormat(15);
+    OutString(150,0,"Baigta pildyti",false);
+    OutDate(200,0,RepSpec.sEndDate,false);
+    EndFormat;
+////
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+
+    StartFormat(15);
+    OutString(0,0,"áiame ìurnale sunumeruota, perverta virvele ir uìantspauduota       lap÷.",false);
+    EndFormat;
+    StartFormat(15);
+    OutString(0,0," ",false);
+    EndFormat;
+    StartFormat(15);
+    OutString(0,0,"20___ m. ___________________  ____ d.",false);
+    EndFormat;
+
+    StartFormat(15);
+    OutString(0,0," ",false);
+    EndFormat;
+
+    StartFormat(15);
+    OutString(30,0,"______________________",false);
+    OutString(150,0,"_________________",false);
+    OutString(270,0,"________________________________",false);
+    EndFormat;
+    StartFormat(15);
+    OutString(30,0,"(pareig÷ pavadinimas)",false);
+    OutString(150,0,"(paraäas)",false);
+    OutString(270,0,"(vardas pavard˜)",false);
+    EndFormat;
+
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+  StartFormat(15);
+    OutString(0,0," ",false);
+  EndFormat;
+
+  end; 
+
+///
+  Gray_Divider(0,1);
+
+    StartFormat(13);
+      OutString(0,0,"Vaìtaraä‹io",false); // nr
+      OutString(30,0,"",false); // isras. data
+      OutString(70,0,"Gav˜jo",false); // pavad.
+      OutString(170,0,"",false); // adresas
+      OutString(270,0,"Siun‹iamo krovinio",false);
+      OutString(440,0,"",false);
+      OutString(1,0,"Atsak.asm.",true);
+//      OutString(450,0,"Rezultat./",True);
+    EndFormat;
+  Gray_Divider(0,1);
+      StartFormat(13);
+      OutString(0,0,"Nr.",false);
+      OutString(30,0,"Iäraä. data",false);
+      OutString(70,0,"Pavadinimas",false);
+      OutString(170,0,"Adresas",false);
+      OutString(270,0,"Pavadinimas",false);
+      OutString(440,0,"Kiekis",true);
+      OutString(1,0,"paraäas",true);
+      EndFormat;
+  Gray_Divider(0,1);
+
+///
+  IVr.InvDate = RepSpec.sStartDate;
+  TrHs = true;  
+  while (LoopKey("InvDate",IVr,1,TrHs)) begin
+    if (IVr.InvDate > RepSpec.sEndDate) then begin
+      TrHs = false;
+    end; // if
+    if (TrHs) then begin
+      fnd1 = true;
+/*
+      if (IVr.OKFlag == 0) then begin
+        fnd1 = false;
+      end; // if
+*/
+      if (blank(IVr.DelAddr4)) then begin
+        fnd1 = false;
+      end; // if
+      if (fnd1) then begin
+        rwcnt = MatRowCnt(IVr);
+	tstr = "";
+	if nonblank(IVr.ShipAddr1) then begin
+	  tstr = tstr & IVr.ShipAddr1;
+	end; // if
+	if nonblank(IVr.ShipAddr2) then begin
+	  if blank(tstr) then begin
+	  tstr = IVr.ShipAddr2;
+	  end else begin
+	  tstr = tstr & ", " & IVr.ShipAddr2;
+	  end; // if
+	end; // if
+	if nonblank(IVr.ShipAddr3) then begin
+	  if blank(tstr) then begin
+	  tstr = IVr.ShipAddr3;
+	  end else begin
+	  tstr = tstr & ", " & IVr.ShipAddr3;
+	  end; // if
+	end; // if
+	if blank(tstr) then begin
+		if nonblank(IVr.Addr1) then begin
+		  tstr = tstr & IVr.Addr1;
+		end; // if
+		if nonblank(IVr.Addr2) then begin
+		  if blank(tstr) then begin
+		  tstr = IVr.Addr2;
+		  end else begin
+		  tstr = tstr & ", " & IVr.Addr2;
+		  end; // if
+		end; // if
+		if nonblank(IVr.Addr3) then begin
+		  if blank(tstr) then begin
+		  tstr = IVr.Addr3;
+		  end else begin
+		  tstr = tstr & ", " & IVr.Addr3;
+		  end; // if
+		end; // if
+	  
+	end; // if
+	
+	
+	    for (i=0;i<rwcnt;i=i+1) begin
+	      MatRowGet(IVr,i,IVrw);
+	      if nonblank(IVrw.ArtCode) then begin
+	        INr.Code = IVrw.ArtCode;
+		fnd2 = true;
+		if ReadFirstMain(INr,1,true) then begin
+		  if (INr.Group == "TRUMP" or INr.Group == "PASL" or INr.Group == "KURAS" or INr.Group == "TRUMP" or
+		      INr.Group == "IRANK" or INr.Group == "GAMYB") then begin
+		    fnd2 = false;
+		  end; // if
+		  if (fnd2) then begin
+		      StartFormat(13);
+		      OutString(0,0,IVr.DelAddr4,false);
+		      OutDate(30,0,IVr.InvDate,false);
+		      OutString(70,0,IVr.Addr0,false);
+		      OutString(170,0,tstr,false);
+		      OutString(270,0,INr.Name,false);
+		      OutVal(440,0,IVrw.Quant,M4Val,true);
+		      OutString(1,0,"",false);
+		      EndFormat;
+  Gray_Divider(0,1);
+
+		  end; // if
+		  
+		  
+		end; // if
+		
+	      end; // if
+	    end;
+      end; // if
+      
+      
+    end; // if
+
+  end; // while
+
+  StartFooter(45,true);
+    Black_Divider(0,1);
+
+    OutString(100,0,USetStr(2412),false)
+  EndFooter;    
+
+  EndJob; 
+  RETURN;
+END;
+
+
+
+

@@ -1,0 +1,247 @@
+procedure Exec_dir(string path)
+begin
+  string 255 fn,fpath;
+  integer c,i;
+
+  if Right(path,1)<>"\\" then begin
+    fpath = "halcust\\" & path & "\\";
+  end else begin
+    fpath = "halcust\\" & path;
+  end;
+  c = CountFilesInDir(fpath);
+  for (i=0;i<c;i=i+1) begin
+    fn = GetFileNameInDir(fpath,i);
+    if Right(fn,4)==".hal" then begin
+      Exec_file(fpath & fn);
+    end;
+  end;
+  return;
+end;
+
+Exec_dir("defs");
+
+begin
+	SourceFile("halcust\\level0", 0);
+	SourceFile("halcust\\level0\\WebNG", 0);
+	SourceFile("halcust\\WebNG", 3);
+	SourceFile("halcust\\lithuanian", 3);
+
+  RecordAddBegin(IVVc,"IVVc_Custom");
+  RecordField(EmptyTruckW,M4Val,0,0);
+  RecordField(FullTruckW,M4Val,0,0);
+  RecordField(EkspNr,M4Long,0,0);
+  KeyBegin(DelAddr4);
+  KeySegment(DelAddr4);
+  KeySegment(SerNr);
+  EndRecordAdd;
+  
+  RecordAddBegin(VIVc,"VIVc_Custom");
+  RecordField(ShipDeal,M4Code,5,0);
+  RecordField(ShipMode,M4Code,5,0);
+  KeyBegin(VECodeRcvDate);
+  KeySegment(VECode);
+  KeySegment(RcvDate);
+  KeySegment(SerNr);
+  EndRecordAdd;
+  
+  RecordAddBegin(FreightCompanyVc,"FreightCompanyVc");
+  RecordField(iVAZNumber,M4Str,60,0);
+  RecordField(iVAZInfo,M4Str,255,0);
+  RecordField(iVAZName,M4Str,60,0);
+  RecordField(iVAZSurname,M4Str,60,0);
+  KeyBegin(Driver);
+  KeySegment(Driver);
+  KeySegment(Code);
+  EndRecordAdd;
+
+  RecordAddBegin(PUVc,"PUVc_Custom");
+  RecordField(Weight,M4Qty,0,0);
+  RecordField(TotWeight,M4Qty,0,0);
+  ArrayField(MeasWeight,M423Val,0,0);
+  EndRecordAdd;
+
+  RecordBegin(ComUpLoadVc,-,"");//Custom register
+  RecordField(CometUpload,M4Str,20,0);
+  RecordField(Math,M4Matrix,0,0);
+  ArrayBegin(Math,-,1);
+  ArrayField(RowCode,M4Code,5,0);
+  ArrayField(ColCode,M4Code,5,0);
+  ArrayField(Comment,M4Str,60,0);
+  EndArray;
+  MainKeyBegin(CometUpload,0);
+  KeySegment(CometUpload);
+  SubsetKeyBegin2(RowCol);
+  //StoreInBaseKey;
+  AppendMatrixFieldToKeyName(RowCode,0);
+  AppendMatrixFieldToKeyName(ColCode,0);
+  KeySegment(CometUpload);
+  EndRecord;
+
+  BlockBegin(TruckWBlock,-,"");//Custom register
+  RecordField(ProgramPath,M4Str,255,0);
+  RecordField(FilePath,M4Str,255,0);
+  RecordField(Command,M4Str,255,0);
+  RecordField(FileName,M4Str,255,0);
+  RecordField(EmptyName,M4Str,20,0);
+  RecordField(FullName,M4Str,20,0);
+  RecordField(Delay,M4Long,0,0);
+  RecordField(WghtCoef,M4Val,0,0);
+  EndBlock;
+
+  RecordBegin(WeightLogVc,-,"");//Custom register
+  RecordField(TimeStamp,M4Str,25,0);         // 14-08-22 13:36:20:828
+  RecordField(Type,M4Int,0,0);               // 2
+  RecordField(EkspeditionsNr,M4Long,20,0);   // 21247
+  RecordField(AnnulleretAf,M4Int,0,0);       // 0
+  RecordField(VaegtNr,M4Str,20,0);           // 1
+  RecordField(VejningsMetode,M4Int,0,0);     // 1
+  RecordField(FaktureretStatus,M4Int,0,0);   // 0
+  RecordField(AnnulleretStatus,M4Int,0,0);   // 0
+  RecordField(FoersteVejning,M4Val,0,0);     // 13360
+  RecordField(DatoFoerste,M4Str,20,0);       // 2014-08-22  12:42:45
+  RecordField(AndenVejning,M4Val,0,0);       // 38840
+  RecordField(Netto,M4Val,0,0);              // 25480
+  RecordField(DatoAnden,M4Str,20,0);         // 2014-08-22  13:36:20
+  RecordField(Oprettet,M4Str,20,0);          // 2014-08-22  12:42:45
+  RecordField(Opdateret,M4Str,20,0);         // 2014-08-22  13:36:20
+  RecordField(BilNr,M4Long,0,0);             // 53485710
+  RecordField(BilNavn,M4Str,60,0);           // AGK452/OK153
+  RecordField(RegistreringsNr,M4Str,60,0);   // AGK452/OK153
+  RecordField(OrdreNr,M4Long,0,0);           //
+  RecordField(OrdreNavn,M4Str,60,0);         //
+  RecordField(OrdreLinieNr,M4Long,0,0);      //
+  RecordField(OrdreLinieNavn,M4Str,60,0);    //
+  RecordField(ModtagerNr,M4Long,0,0);        // 1
+  RecordField(ModtagerNavn,M4Str,60,0);      // Klaipeda
+  RecordField(BetalerNr,M4Long,0,0);         // 5
+  RecordField(BetalerNavn,M4Str,60,0);       // HeidelbergCement Klaipeda
+  RecordField(LeverandoerNr,M4Long,0,0);     // 1
+  RecordField(LeverandoerNavn,M4Str,60,0);   // Heidelbergcement Klaipeda
+  RecordField(VognmandsNr,M4Long,0,0);       // 3
+  RecordField(VognmandsNavn,M4Str,60,0);     // Gerdukas
+  RecordField(ContainerNr,M4Long,0,0);       //
+  RecordField(ContainerNavn,M4Str,60,0);     //
+  RecordField(KommuneNr,M4Long,0,0);         //
+  RecordField(KommuneNavn,M4Str,60,0);       //
+  RecordField(AfhentPladsNr,M4Long,0,0);     // 10
+  RecordField(AfhentPladsNavn,M4Str,60,0);   // Aleksandras Pavlovskij
+  RecordField(LevPladsNr,M4Long,0,0);        //
+  RecordField(LevPladsNavn,M4Str,60,0);      //
+  RecordField(VareNr,M4Long,0,0);            //
+  RecordField(VareNavn,M4Str,60,0);          //
+  RecordField(KoerselsNr,M4Long,0,0);        //
+  RecordField(Varepris,M4Val,0,0);           // 0
+  RecordField(Afgift1Nr,M4Long,0,0);         //
+  RecordField(Afgift1Navn,M4Str,60,0);       //
+  RecordField(Afgift1Pris,M4Val,0,0);        // 0
+  RecordField(Afgift2Nr,M4Long,0,0);         //
+  RecordField(Afgift2Navn,M4Str,60,0);       //
+  RecordField(Afgift2Pris,M4Val,0,0);        // 0
+  RecordField(Afgift3Nr,M4Long,0,0);         //
+  RecordField(Afgift3Navn,M4Str,60,0);       //
+  RecordField(Afgift3Pris,M4Val,0,0);        // 0
+  RecordField(AfgifterIAlt,M4Str,60,0);      // 0
+  RecordField(Gebyr,M4Str,60,0);             // 0
+  RecordField(GebyrNr,M4Long,0,0);           //
+  RecordField(GebyrNavn,M4Str,60,0);         //
+  RecordField(Momssats,M4Val,0,0);           // 0
+  RecordField(PrisUdenMoms,M4Val,0,0);       // 0
+  RecordField(Moms,M4Val,0,0);               // 0
+  RecordField(PrisIAlt,M4Val,0,0);           // 0
+  RecordField(Bemaerkning1,M4Str,200,0);     //
+  RecordField(Bemaerkning2,M4Str,200,0);     //
+  RecordField(ManuelVej1,M4Str,60,0);        //
+  RecordField(ManuelVej2,M4Str,60,0);        //
+  RecordField(AntalDelvejninger,M4Long,0,0); // 0
+  RecordField(FaktureringsType,M4Int,0,0);   // 0
+  RecordField(Reference,M4Str,200,0);        // 0
+  RecordField(LoginBruger,M4Str,60,0);       // ST1\ST1
+  RecordField(EnhedsPris,M4Val,0,0);         // 0
+  RecordField(MinPris,M4Val,0,0);            // 0
+  RecordField(MaxPris,M4Val,0,0);            // 0
+  RecordField(Fradrag,M4Val,0,0);            // 0
+  RecordField(FradragNr,M4Long,0,0);         //
+  RecordField(FradragNavn,M4Str,60,0);       //
+  RecordField(KoerselsNr2,M4Long,0,0);       //
+  RecordField(EfterBeh,M4Long,0,0);          //
+  RecordField(Exporteret,M4Long,0,0);        //
+  RecordField(SpecielPris,M4Val,0,0);        // 0
+  RecordField(OrdreFraktionNr,M4Long,0,0);   //
+  RecordField(OrdreFraktionNavn,M4Str,60,0); //
+  MainKeyBegin(TimeStamp,0);
+  KeySegment(TimeStamp);
+  KeyBegin(EkspeditionsNr);
+  KeySegment(EkspeditionsNr);
+  KeySegment(TimeStamp);
+  EndRecord;
+  
+  BlockBegin(VIVcImportBlock,-,"");//Custom
+  RecordField(VIFilePath,M4Str,255,0);
+  RecordField(VIMovePath,M4Str,255,0);
+  RecordField(IVFilePath,M4Str,255,0);
+  RecordField(IVMovePath,M4Str,255,0);
+  RecordField(VIFilePathKL,M4Str,255,0);
+  RecordField(VIMovePathKL,M4Str,255,0);
+  RecordField(IVFilePathKL,M4Str,255,0);
+  RecordField(IVMovePathKL,M4Str,255,0);
+  RecordField(VIFilePath1,M4Str,255,0);
+  RecordField(VIMovePath1,M4Str,255,0);
+  RecordField(IVFilePath1,M4Str,255,0);
+  RecordField(IVMovePath1,M4Str,255,0);
+  RecordField(VIFilePath4,M4Str,255,0);
+  RecordField(VIMovePath4,M4Str,255,0);
+  RecordField(IVFilePath4,M4Str,255,0);
+  RecordField(IVMovePath4,M4Str,255,0);
+  RecordField(VIPayDeal,M4UStr,2,0);
+  RecordField(VATCode,M4UStr,5,0);
+  EndBlock;
+  
+  BlockBegin(iVAZBlock,-,"");//Custom
+  RecordField(WeightExpFlag,M4Int,0,0);
+  RecordField(CustomExpFlag,M4Int,0,0);
+  RecordField(ExpDateTimeFlag,M4Int,0,0);
+  RecordField(WeightUnit,M4Code,10,UnitVc);
+  EndBlock;
+  
+  BlockBegin(VATCodeBlock,-,"vatcode");
+  NewAutosyncHBlock(kSyncDirectionToClient);
+  RecordField(Math,M4Matrix,0,0);
+  ArrayBegin(Math,-,1);
+  ArrayField(VATCode,M4Code,10,VATCodeBlock);
+  ArrayField(Comment,M4Str,60,0);
+  ArrayField(ExVatpr,M423Val,0,0);
+  ArrayField(IncVatpr,M4Rate,0,0);//M423Val
+  ArrayField(SalesVATAcc,M4Code,10,AccVc);
+  ArrayField(PurchVATAcc,M4Code,10,AccVc);
+  ArrayField(Tax1pr,M423Val,0,0);
+  ArrayField(Tax1Acc,M4Code,10,AccVc);
+  ArrayField(PayPurchVATAcc,M4Code,10,AccVc);
+  ArrayField(PaySalesVATAcc,M4Code,10,AccVc);
+  ArrayField(ExcludeFromOfficial,M4Set,50,0);
+  ArrayField(CorSalesVATAcc,M4Code,10,AccVc);
+  ArrayField(CorPurchVATAcc,M4Code,10,AccVc);
+  ArrayField(Tax1OppAcc,M4Code,10,AccVc);
+  ArrayField(Tax1Min,M4Val,0,0);
+  ArrayField(TaxRules,M4Code,20,TaxRulesVc);
+  ArrayField(CredSalesVATAcc,M4Code,10,AccVc);
+  ArrayField(CredPurchVATAcc,M4Code,10,AccVc);
+  ArrayField(InclinTotal,M4Set,452,0);
+  ArrayField(TaxMatrixVariance,M4Code,10,AccVc);
+  ArrayField(ValidUntil,M4Date,0,0);
+  ArrayField(HotelWIPAcc,M4Code,10,AccVc);  
+  ArrayField(MinBaseAmount,M4Val,0,0);
+  ArrayField(MaxBaseAmount,M4Val,0,0);
+  ArrayField(CalcRule,M4Set,511,0);
+  ArrayField(REDpr,M423Val,0,0);
+  ArrayField(STExVatpr,M423Val,0,0);
+  //start
+  ArrayField(VATCodeiSAF,M4Str,60,0);
+  ArrayField(PURVATCodeiSAF,M4Str,60,0);
+  //end
+  EndArray;
+  EndBlock;
+
+return;
+end;
+
+

@@ -1,0 +1,1514 @@
+external inner procedure GetVATRow(string,var row VATCodeBlock);
+external inner procedure HT2Per(Date,Date,var string);
+external inner function Boolean GetPMRow(string,var row PMBlock);
+external inner function val MulRateToBase1(var string,val,val,val,val,val,val,roundmode);
+
+event startup
+begin
+  SetLangMode(LangLithuanian, "LIT", 0);
+	Report("i.SAF",LitiSAFRClass,LitiSAFRn,0,modNL); 
+
+    SString(39700,"N˜ra kˆ eksportuoti"); //!!TRANSLATE
+  SString(39701,"iSAF Eksportas"); //!!TRANSLATE
+  SString(39702,"Versija"); //!!TRANSLATE
+  SString(39703,"Duomen÷ tipas"); //!!TRANSLATE
+  SString(39704,"Sukðrimo data"); //!!TRANSLATE
+  SString(39705,"Reg. nr."); //!!TRANSLATE
+  SString(39706,"Programos gamintojas"); //!!TRANSLATE
+  SString(39707,"Programos pavadinimas"); //!!TRANSLATE
+  SString(39708,"Programos versija"); //!!TRANSLATE
+  SString(39709,"Antraät˜"); //!!TRANSLATE
+  SString(39710,"Pirk˜jai"); //!!TRANSLATE
+  SString(39711,"Pirk˜jo ID"); //!!TRANSLATE
+  SString(39712,"Pavadinimas"); //!!TRANSLATE
+  SString(39713,"PVM reg. nr."); //!!TRANSLATE
+  SString(39714,"Reg. Nr."); //!!TRANSLATE
+  SString(39715,"áalis"); //!!TRANSLATE
+  SString(39716,"Tiek˜jo ID"); //!!TRANSLATE
+  SString(39717,"Tiek˜jai"); //!!TRANSLATE
+  SString(39718,"Pirkimo faktðros"); //!!TRANSLATE
+  SString(39719,"Nr"); //!!TRANSLATE
+  SString(39720,"Data"); //!!TRANSLATE
+  SString(39721,"Tipas"); //!!TRANSLATE
+  SString(39722,"PVM kd."); //!!TRANSLATE
+  SString(39723,"Suma"); //!!TRANSLATE
+  SString(39724,"PVM proc."); //!!TRANSLATE
+  SString(39725,"Apmok. suma"); //!!TRANSLATE
+  SString(39726,"Pardavimo faktðros"); //!!TRANSLATE
+  SString(39727,"Mok˜jimai"); //!!TRANSLATE
+  SString(39728,"Fakt. Nr"); //!!TRANSLATE
+  SString(39729,"Fakt. Data"); //!!TRANSLATE
+  SString(39730,"Suma"); //!!TRANSLATE
+  SString(39731,"PVM suma"); //!!TRANSLATE
+  SString(39732,"¯plaukos"); //!!TRANSLATE
+  return;
+end;
+
+
+
+event DefineWindows
+begin
+
+  real h,v,vs;
+  boolean NextLine;
+  SetLangMode(LangLithuanian,"LIT",0);
+  WindowBegin("Apibr˜ìti i.SAF",LitiSAFRClass,CGRcW,RcType); //!!TRANSLATE
+  SetWRect(20,80,500,390);
+  PeriodField(h=150,v=6,"Periodas"); //!!TRANSLATE
+  vs=20;
+  EditFieldTL(h,v+=vs,150,"Serija",M4UStr,Normal,21,f4,false,0); //!!TRANSLATE
+  EditFieldTL(h,v+=vs,100,"PVM kodas",M4UStr,Normal,20,f2,false,VATCodeSClass); //!!TRANSLATE
+  EditFieldTL(h,v+=vs,80,"Ne°traukti mok. sˆl.",M4UStr,Normal,21,f1,false,PDSClass); //!!TRANSLATE
+  EditFieldTL(h,v+=vs,80,"Objektas",M4UStr,Normal,60,ObjStr,false,ObjSClass);
+  CheckBox(h,v+=30,0,"¯traukti °plaukas ir mok˜jimus",flags[0]); //!!TRANSLATE
+  CheckBox(h,v+=30,0,"¯traukti avansin« apyskaitˆ",flags[1]); //!!TRANSLATE
+  CheckBox(h,v+=16, 0,"Sukeisti °mon˜s kodˆ su PVM mok. kodu",flags[8]); //!!TRANSLATE
+  EndWindow;
+end;
+
+function Boolean TestReceiptsCustomers(record RcVc RepSpec,string CustCode)
+begin
+  Boolean Res,foundsm,testf;
+  record IPVc IPr;
+  row IPVc IPrw;
+  integer i,rwcnt;
+  row PMBlock PMrw;
+  
+  res = false;
+  ResetLoop(IPr);
+  foundsm = true;
+  IPr.TransDate = RepSpec.sStartDate;
+  while (LoopKey("TransDate",IPr,1,foundsm)) begin
+    if (DateInRange(IPr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin foundsm = false; end;
+    if (foundsm) then begin
+      testf = true;
+      if (IPr.Invalid!=0) then begin testf = false; end;
+      if (IPr.OKFlag==0) then begin testf = false; end; 
+      GetPMRow(IPr.PayMode,PMrw);     
+      if (PMrw.CheckType!=kPayModeTypeResource) then begin testf = false; end;     
+      if (testf) then begin 
+        if (MatRowCnt(IPr)>0) then begin 
+          MatRowGet(IPr,0,IPrw);
+          if (nonblank(IPrw.CustCode)) then begin
+            if (IPrw.CustCode==CustCode) then begin 
+              res = true;
+              foundsm = false;
+            end;
+          end;
+        end;    
+      end;
+    end;
+  end;
+  TestReceiptsCustomers = res;
+  return;
+end;
+
+function Boolean TestPaymentsCustomers(record RcVc RepSpec,string CustCode)
+begin
+  Boolean Res,foundsm,testf;
+  record OPVc OPr;
+  row OPVc OPrw;
+  integer i,rwcnt;
+  row PMBlock PMrw;
+  
+  res = false;
+  ResetLoop(OPr);
+  foundsm = true;
+  OPr.TransDate = RepSpec.sStartDate;
+  while (LoopKey("TransDate",OPr,1,foundsm)) begin
+    if (DateInRange(OPr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin foundsm = false; end;
+    if (foundsm) then begin
+      testf = true;
+      if (OPr.Invalid!=0) then begin testf = false; end;
+      if (OPr.DoneFlag==0) then begin testf = false; end;  
+      GetPMRow(OPr.PayMode,PMrw);     
+      if (PMrw.CheckType!=kPayModeTypeResource) then begin testf = false; end;      
+      if (testf) then begin 
+        if (MatRowCnt(OPr)>0) then begin 
+          MatRowGet(OPr,0,OPrw);
+          if (nonblank(OPrw.VECode)) then begin
+            if (OPrw.VECode==CustCode) then begin 
+              res = true;
+              foundsm = false;
+            end;
+          end;
+        end;    
+      end;
+    end;
+  end;
+  TestPaymentsCustomers = res;
+  return;
+end;
+
+procedure ExportSAFCountryTag(string DelAddr4,string InvAddr4,string CountryCode,boolean CheckBlankf)
+begin
+  record CountryVc Countryr;
+
+  if (nonblank(DelAddr4)) then begin
+    Countryr.Comment = DelAddr4;
+    if (ReadFirstKey("Comment",Countryr,1,true)) then begin
+      if (nonblank(Countryr.Code)) then begin 
+        OutString(440,0,Countryr.Code,false);
+      end else begin  
+        OutString(440,0,USetStr(26701),false);  
+      end;
+    end;
+    goto LExportSAFTCountryTag;
+  end;
+  
+  if (nonblank(InvAddr4)) then begin
+    Countryr.Comment = InvAddr4;
+    if (ReadFirstKey("Comment",Countryr,1,true)) then begin
+      OutString(440,0,Countryr.Code,false);
+    end else begin
+      if (nonblank(CountryCode)) then begin
+        OutString(440,0,CountryCode,false);          
+      end else begin
+        if (CheckBlankf) then begin 
+          OutString(440,0,USetStr(26701),false);
+        end else begin          
+          OutString(440,0,"LT",false);
+        end;
+      end;          
+    end;
+  end else begin
+    if (nonblank(CountryCode)) then begin
+      OutString(440,0,CountryCode,false);          
+    end else begin
+      if (CheckBlankf) then begin 
+        OutString(440,0,USetStr(26701),false);
+      end else begin          
+        OutString(440,0,"LT",false);
+      end;
+    end;
+  end;
+LExportSAFTCountryTag:;
+  return;
+end;
+
+procedure ExportCustomers(record RcVc RepSpec)
+begin
+  record CUVc CUr;
+  Boolean found,testf;
+  record IVVc IVr;
+  Integer cnt;
+  
+  Black_Divider(0,200);
+  StartFormat(15);
+  OutString(0,0,USetStr(39710),false);
+  EndFormat;
+  Black_Divider(0,200);
+  
+  StartFormat(15);
+  EndFormat;
+  
+  StartFormat(15);
+  OutString(0,0,USetStr(39711),false);
+  OutString(50,0,USetStr(39712),false);
+  OutString(250,0,USetStr(39713),false);
+  OutString(350,0,USetStr(39714),false);
+  OutString(440,0,USetStr(39715),false);
+  EndFormat;
+  Gray_Divider(0,1);
+  
+  cnt = 0;
+  found = true;
+  while (LoopMain(CUr,1,found)) begin 
+    testf = false;
+    if (found) then begin
+      testf = true;
+      if (testf) then begin
+        IVr.CustCode = CUr.Code;
+        IVr.InvDate = RepSpec.sStartDate;
+        testf = ReadFirstKey("CustDate",IVr,2,false);
+        if (testf) then begin
+          testf = IVr.CustCode==CUr.Code;
+        end;
+        if (testf) then begin
+          testf = DateInRange(IVr.InvDate,RepSpec.sStartDate,RepSpec.sEndDate);
+        end;
+      end;
+      if (testf==false) then begin
+        if (RepSpec.flags[0]==1) then begin
+          testf = TestReceiptsCustomers(RepSpec,CUr.Code);
+        end;
+      end;
+      //strt cust
+      if (nonblank(RepSpec.ObjStr)) then begin
+          if (SetInSet(RepSpec.ObjStr,IVr.Objects)==false) then begin
+            testf = false;
+          end;
+      end;
+      //end cust
+      if (testf) then begin
+        cnt = cnt + 1;  
+        StartFormat(15);
+        OutString(0,"DblCUVc",CUr.Code,false);
+        if (blank(CUr.Name)) then begin
+          OutString(50,0,USetStr(26701),false);
+        end else begin
+          OutString(50,0,left(CUr.Name,100),false);
+        end;
+        if (RepSpec.flags[8]==0) then begin
+          if (nonblank(CUr.VATNr)) then begin
+            OutString(250,0,CUr.VATNr,false);
+          end else begin
+            OutString(250,0,"ND",false);
+          end;
+          if (nonblank(CUr.RegNr1)) then begin
+            OutString(350,0,CUr.RegNr1,false);
+          end else begin
+            OutString(350,0,"ND",false);
+          end;
+        end else begin
+          if (nonblank(CUr.RegNr1)) then begin
+            OutString(250,0,CUr.RegNr1,false);
+          end else begin
+            OutString(250,0,"ND",false);
+          end;
+          if (nonblank(CUr.VATNr)) then begin
+            OutString(350,0,CUr.VATNr,false);
+          end else begin
+            OutString(350,0,"ND",false);
+          end;
+        end;
+        ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false);
+        EndFormat;
+      end;
+    end;
+  end;
+  
+  if (cnt==0) then begin
+    StartFormat(15);
+    OutString(0,0,USetStr(39700),false);
+    EndFormat;
+    StartFormat(15);
+    EndFormat;
+  end else begin
+    Gray_Divider(0,1);
+    StartFormat(15);
+    EndFormat;
+  end;
+  
+  return;
+end;
+
+procedure ExportSuppliers(record RcVc RepSpec)
+begin
+  record CUVc CUr;
+  Boolean found,testf;
+  record VIVc VIr;
+  Integer cnt;
+  
+  Black_Divider(0,200);
+  StartFormat(15);
+  OutString(0,0,USetStr(39717),false);
+  EndFormat;
+  Black_Divider(0,200);
+  
+  StartFormat(15);
+  EndFormat;
+  
+  StartFormat(15);
+  OutString(0,0,USetStr(39716),false);
+  OutString(50,0,USetStr(39712),false);
+  OutString(250,0,USetStr(39713),false);
+  OutString(350,0,USetStr(39714),false);
+  OutString(440,0,USetStr(39715),false);
+  EndFormat;
+  Gray_Divider(0,1);
+  
+  found = true;
+  cnt = 0;
+  while (LoopMain(CUr,1,true)) begin 
+    if (found) then begin
+      testf = true;
+      if (testf) then begin
+        VIr.VECode = CUr.Code;
+        VIr.TransDate = RepSpec.sEndDate;
+        testf = ReadLastKey("VECodeTransDate",VIr,2,false);
+        if (testf) then begin
+          testf = VIr.VECode==CUr.Code;
+          //start
+          end;
+        if (testf) then begin
+            testf = DateInRange(VIr.InvDate,RepSpec.sStartDate,RepSpec.sEndDate);
+        end;
+        if testf == false then begin
+          ResetLoop(VIr);
+          VIr.VECode = CUr.Code;
+          VIr.RcvDate = RepSpec.sEndDate;
+          testf = ReadLastKey("VECodeRcvDate",VIr,2,false);
+          if (testf) then begin
+            testf = VIr.VECode==CUr.Code;
+          end;
+          if (testf) then begin
+            testf = DateInRange(VIr.RcvDate,RepSpec.sStartDate,RepSpec.sEndDate);
+          end; 
+        end;
+      end;
+      //end
+      if (testf==false) then begin
+        if (RepSpec.flags[0]==1) then begin
+          testf = TestPaymentsCustomers(RepSpec,CUr.Code);
+        end;
+      end;
+      if (nonblank(RepSpec.ObjStr)) then begin
+          if (SetInSet(RepSpec.ObjStr,VIr.Objects)==false) then begin
+            testf = false;
+          end;
+      end;
+      if (testf) then begin
+        cnt = cnt + 1;
+        StartFormat(15);
+        OutString(0,"DblCUVc",CUr.Code,false);
+        if (blank(CUr.Name)) then begin
+          OutString(50,0,USetStr(26701),false);
+        end else begin
+          OutString(50,0,left(CUr.Name,100),false);
+        end;
+        if (RepSpec.flags[8]==0) then begin
+          if (nonblank(CUr.VATNr)) then begin
+            OutString(250,0,CUr.VATNr,false);
+          end else begin
+            OutString(250,0,"ND",false);
+          end;
+          if (nonblank(CUr.RegNr1)) then begin
+            OutString(350,0,CUr.RegNr1,false);
+          end else begin
+            OutString(350,0,"ND",false);
+          end;
+        end else begin
+          if (nonblank(CUr.RegNr1)) then begin
+            OutString(250,0,CUr.RegNr1,false);
+          end else begin
+            OutString(250,0,"ND",false);
+          end;
+          if (nonblank(CUr.VATNr)) then begin
+            OutString(350,0,CUr.VATNr,false);
+          end else begin
+            OutString(350,0,"ND",false);
+          end;
+        end;
+        ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false);
+        EndFormat;
+      end;
+    end;
+  end;
+  
+  if (cnt==0) then begin
+    StartFormat(15);
+    OutString(0,0,USetStr(39700),false);
+    EndFormat;
+    StartFormat(15);
+    EndFormat;
+  end else begin
+    Gray_Divider(0,1);
+    StartFormat(15);
+    EndFormat;
+  end;
+  
+  return;
+end;
+
+procedure GetPInvoicesSums(record VIVc VIr,var record IVVc VirtVatr,var integer results)
+begin
+  integer rwcnt,rwcnt1,j,i;
+  row VIVc VIrw;
+  row IVVc VirtVatrw;
+  Boolean found;
+  row VATCodeBlock VATCbrw;
+  val sum;
+  
+  results = 0;
+  rwcnt = MatRowCnt(VIr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(VIr,i,VIrw);
+    if (nonblank(VIrw.VATCode)) then begin
+      found = false;
+      rwcnt1 = MatRowCnt(VirtVatr);
+      for (j=0;j<rwcnt1;j=j+1) begin
+        MatRowGet(VirtVatr,j,VirtVatrw);
+        if (VirtVatrw.VATCode==VIrw.VATCode) then begin
+          found = true;
+          GetVATRow(VIrw.VATCode,VATCbrw);
+          sum = mulratetobase1(VIr.CurncyCode,VIrw.Sum,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
+          VirtVatrw.Sum = VirtVatrw.Sum + sum;
+          VirtVatrw.BasePrice = VirtVatrw.BasePrice + (sum * (VATCbrw.ExVatpr/100));
+          results = results + 1;
+          MatRowPut(VirtVatr,j,VirtVatrw);
+          goto LNext;
+        end;
+      end;
+      if (found==false) then begin
+        MatRowGet(VirtVatr,rwcnt1,VirtVatrw);
+        GetVATRow(VIrw.VATCode,VATCbrw);
+        sum = mulratetobase1(VIr.CurncyCode,VIrw.Sum,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
+        VirtVatrw.Sum = sum;
+        VirtVatrw.BasePrice = VirtVatrw.Sum * (VATCbrw.ExVatpr/100);
+        //start
+        VirtVatrw.VATCode = VIrw.VATCode;
+        //end
+        VirtVatrw.Price = VATCbrw.ExVatpr;
+        MatRowPut(VirtVatr,rwcnt1,VirtVatrw);
+        results = results + 1;
+      end;
+LNext:;
+    end;
+  end;
+  
+  return;
+end;
+
+procedure GetInvoicesSums(record IVVc IVr,var record IVVc VirtVatr,var integer results)
+begin
+  integer rwcnt,rwcnt1,j,i;
+  row IVVc IVrw;
+  row IVVc VirtVatrw;
+  Boolean found;
+  row VATCodeBlock VATCbrw;
+  val sum;
+    
+  results = 0;
+  rwcnt = MatRowCnt(IVr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(IVr,i,IVrw);
+    if (nonblank(IVrw.VATCode)) then begin
+      found = false;
+      rwcnt1 = MatRowCnt(VirtVatr);
+      for (j=0;j<rwcnt1;j=j+1) begin
+        MatRowGet(VirtVatr,j,VirtVatrw);
+        if (VirtVatrw.VATCode==IVrw.VATCode) then begin
+          found = true;
+          GetVATRow(IVrw.VATCode,VATCbrw);
+          sum = mulratetobase1(IVr.CurncyCode,IVrw.Sum,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2,DefaultCurRoundOff);
+          if IVr.InclVAT == 0 then begin
+            VirtVatrw.Sum = VirtVatrw.Sum + sum;
+            VirtVatrw.BasePrice = VirtVatrw.BasePrice + (sum * (VATCbrw.ExVatpr/100));
+          end else begin
+            VirtVatrw.BasePrice = VirtVatrw.BasePrice + sum*(VATCbrw.IncVatpr/100);
+            VirtVatrw.Sum = VirtVatrw.Sum +  sum - sum*(VATCbrw.IncVatpr/100);     
+          end;
+          results = results + 1;
+          MatRowPut(VirtVatr,j,VirtVatrw);
+          goto LNext1;
+        end;
+      end;
+      if (found==false) then begin
+        MatRowGet(VirtVatr,rwcnt1,VirtVatrw);
+        GetVATRow(IVrw.VATCode,VATCbrw);
+        sum = mulratetobase1(IVr.CurncyCode,IVrw.Sum,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2,DefaultCurRoundOff);
+        if IVr.InclVAT == 0 then begin
+          VirtVatrw.Sum = sum;
+          VirtVatrw.BasePrice = VirtVatrw.Sum * (VATCbrw.ExVatpr/100);
+        end else begin
+          VirtVatrw.BasePrice = sum*(VATCbrw.IncVatpr/100);
+          VirtVatrw.Sum =  sum - sum*(VATCbrw.IncVatpr/100);     
+        end;
+        VirtVatrw.VATCode = IVrw.VATCode;
+        VirtVatrw.Price = VATCbrw.ExVatpr;
+        MatRowPut(VirtVatr,rwcnt1,VirtVatrw);
+        results = results + 1;
+      end;
+LNext1:;
+    end;
+  end;
+  
+  return;
+end;
+
+function boolean CheckIVVATCode(string sernr, string vat)
+begin
+  record IVVc IVr;
+  row IVVc IVrw;
+  integer i, cnt, vcnt;
+
+  IVr.SerNr = sernr;
+  vcnt = 0;
+  if (ReadFirstMain(IVr,1,true)) then
+  begin
+    cnt = MatRowCnt(IVr);
+    for (i=0;i<cnt;i=i+1) begin
+      MatRowGet(IVr, i, IVrw);
+        if (IVrw.Sum!=0) and (SetInSet(IVrw.VATCode,vat)) then begin
+        vcnt = vcnt + 1;
+      end;
+    end;
+
+  end;
+  CheckIVVATCode = (vcnt>0);
+  return;
+end;
+
+function boolean CheckVIVATCode(string sernr, string vat)
+begin
+  record VIVc VIr;
+  row VIVc VIrw;
+  integer i, cnt, vcnt;
+
+  VIr.SerNr = sernr;
+  vcnt = 0;
+  if (ReadFirstMain(VIr,1,true)) then
+  begin
+    cnt = MatRowCnt(VIr);
+    for (i=0;i<cnt;i=i+1) begin
+      MatRowGet(VIr, i, VIrw);
+        if (VIrw.Sum!=0) and (SetInSet(VIrw.VATCode,vat)) then begin
+        vcnt = vcnt + 1;
+      end;
+    end;
+
+  end;
+  CheckVIVATCode = (vcnt>0);
+  return;
+end;
+
+function string 10 GetVatCode(string vatcode)
+begin
+  string 10 res;
+  record VATCodeBlock VATbr;
+  row VATCodeBlock VATbrw;
+  integer i,rwcnt;
+  
+  blockload(VATbr);
+  rwcnt = MatRowCnt(VATbr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(VATbr,i,VATbrw);
+    if vatcode == VATbrw.VATCode then begin
+	  res = VATbrw.VATCodeiSAF;
+      i = rwcnt;
+    end;
+  end;
+  
+  GetVatCode = res;
+return;
+end;
+
+function string 10 GetPURVatCode(string vatcode)
+begin
+  string 10 res;
+  record VATCodeBlock VATbr;
+  row VATCodeBlock VATbrw;
+  integer i,rwcnt;
+  
+  blockload(VATbr);
+  rwcnt = MatRowCnt(VATbr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(VATbr,i,VATbrw);
+    if vatcode == VATbrw.VATCode then begin
+	  res = VATbrw.PURVATCodeiSAF;
+      i = rwcnt;
+    end;
+  end;
+  
+  GetPURVatCode = res;
+return;
+end;
+
+procedure ExportPurchaseInvoices(record RcVc RepSpec)
+begin
+  record VIVc VIr,DCVIr;
+  row VIVc VIrw;
+  Boolean found,testf;
+  record CUVc CUr;
+  record IVVc VirtVatr;
+  row IVVc VirtVatrw;
+  integer results,i,rwcnt,cnt;
+  string 255 tstr;
+  record PDVc PDr;
+  
+  Black_Divider(0,200);
+  StartFormat(15);
+  OutString(0,0,USetStr(39718),false);
+  EndFormat;
+  Black_Divider(0,200);
+  
+  StartFormat(15);
+  EndFormat;
+  
+  cnt = 0;
+  found = true;
+  VIr.TransDate = Addmonth(RepSpec.sStartDate,-2);
+  while (LoopKey("TransDate",VIr,1,true)) begin
+    tstr = "";
+    testf = true;
+    if blank(VIr.RcvDate) then begin
+      found = DateInRange(VIr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate);
+    end else begin
+      found = DateInRange(VIr.RcvDate,RepSpec.sStartDate,RepSpec.sEndDate);
+    end;
+    
+    if (VIr.OKFlag==0) then begin testf = false; end;
+    if (nonblank(RepSpec.f1) and SetInSet(VIr.PayDeal, RepSpec.f1)) then begin
+      testf = false;
+    end;
+    if (nonblank(RepSpec.f2)) then begin
+      testf = CheckVIVATCode(VIr.SerNr, RepSpec.f2);
+    end;
+    if (nonblank(RepSpec.ObjStr)) then begin
+          if (SetInSet(RepSpec.ObjStr,VIr.Objects)==false) then begin
+            testf = false;
+          end;
+      end;
+    //start cust
+    results = 0;
+    //end cust
+    if (found and testf) then begin
+      RecordNew(VirtVatr);
+      GetPInvoicesSums(VIr,VirtVatr,results);
+    end;
+    if (results>0) then begin
+      cnt = cnt + 1;
+      Gray_Divider(0,1);
+      StartFormat(15);
+      OutString(0,0,USetStr(39719),false);
+      OutString(50,0,USetStr(39720),false);
+      OutString(100,0,USetStr(39721),false);
+      OutString(200,0,"Reg. apskaitoje data",false);
+      if (VIr.ServiceDelDate!=VIr.InvDate and nonblank(VIr.ServiceDelDate)) then begin
+        OutString(250,0,USetStr(39733),false);
+      end;
+      OutString(300,0,USetStr(39722),false);
+      OutString(380,0,USetStr(39723),true);
+      OutString(430,0,USetStr(39724),true);
+      OutString(480,0,USetStr(39725),true);
+      EndFormat;
+     
+      if (VIr.InvoiceNr!="") then begin
+        tstr = VIr.InvoiceNr;
+      end else begin
+        tstr = "";
+      end;
+      OutStringID(0,"DblVIVc",tstr,false,VIr.SerNr);
+      OutString(50,0,VIr.TransDate,false);
+      if (VIr.InvType==kInvoiceTypeCredit) then begin
+        OutString(100,0,"KS",false);
+      end else begin
+        if (VIr.Invalid!=0) then begin
+          OutString(100,0,"AN",false);
+        end else begin
+          if (VIr.InvType==kInvoiceTypeDebit) then begin
+            OutString(100,0,"DS",false);
+          end else begin
+            OutString(100,0,"SF",false);
+          end;
+        end;
+      end;
+      PDr.Code = VIr.PayDeal;
+      ReadFirstMain(PDr,1,true);
+      if (PDr.PDType==10) then begin
+        OutString(130,0,"T",false);
+      end;
+      OutString(200,0,VIr.RcvDate,false);
+      if (VIr.InvType==kInvoiceTypeDebit or VIr.InvType==kInvoiceTypeCredit) then begin
+        DCVIr.SerNr = VIr.CredInv;
+        ReadFirstMain(DCVIr,1,true);
+        OutStringID(200,"DblVIVc",DCVIr.InvoiceNr,true,VIr.CredInv);
+        OutString(210,0,DCVIr.TransDate,false);
+      end;
+      if (VIr.ServiceDelDate!=VIr.InvDate and nonblank(VIr.ServiceDelDate)) then begin
+        OutString(250,0,VIr.ServiceDelDate,false);
+      end;
+      rwcnt = MatRowCnt(VirtVatr);
+      for (i=0;i<rwcnt;i=i+1) begin
+        MatRowGet(VirtVatr,i,VirtVatrw);
+        if (i>0) then begin
+          StartFormat(15);
+        end;
+        OutString(300,0,GetPURVatCode(VirtVatrw.VATCode),false);
+        OutString(380,0,ValToString(VirtVatrw.BasePrice,M4Val,"",".",0),true);
+        OutString(430,0,ValToString(VirtVatrw.Price,M4Val,"",".",0),true);
+        OutString(480,0,ValToString(VirtVatrw.Sum,M4Val,"",".",0),true);
+        EndFormat;
+      end;
+      StartFormat(15);
+      EndFormat;
+      StartFormat(15);
+      CUr.Code = VIr.VECode; 
+      ReadFirstMain(CUr,1,true);
+      StartFormat(15);
+      OutString(0,0,USetStr(39716),false);
+      OutString(50,0,USetStr(39712),false);
+      OutString(250,0,USetStr(39713),false);
+      OutString(350,0,USetStr(39714),false);
+      OutString(440,0,USetStr(39715),false);
+      EndFormat;
+      OutString(0,"DblCUVc",CUr.Code,false);
+      if (blank(CUr.Name)) then begin
+        OutString(50,0,USetStr(26701),false);
+      end else begin
+        OutString(50,0,left(CUr.Name,100),false);
+      end;
+      if (RepSpec.flags[8]==0) then begin
+        if (nonblank(CUr.VATNr)) then begin
+          OutString(250,0,CUr.VATNr,false);
+        end else begin
+          OutString(250,0,"ND",false);
+        end;
+        if (nonblank(CUr.RegNr1)) then begin
+          OutString(350,0,CUr.RegNr1,false);
+        end else begin
+          OutString(350,0,"ND",false);
+        end;
+      end else begin
+        if (nonblank(CUr.RegNr1)) then begin
+          OutString(250,0,CUr.RegNr1,false);
+        end else begin
+          OutString(250,0,"ND",false);
+        end;
+        if (nonblank(CUr.VATNr)) then begin
+          OutString(350,0,CUr.VATNr,false);
+        end else begin
+          OutString(350,0,"ND",false);
+        end;
+      end;
+      ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false);
+      EndFormat;
+      StartFormat(15);
+      EndFormat;
+      Gray_Divider(0,1);
+    end;
+  end;
+  
+  if (cnt==0) then begin
+    StartFormat(15);
+    OutString(0,0,USetStr(39700),false);
+    EndFormat;
+    StartFormat(15);
+    EndFormat;
+  end else begin
+    StartFormat(15);
+    EndFormat;
+  end;
+  
+  return;
+end;
+
+procedure ExportInvoices(record RcVc RepSpec)
+begin
+  record IVVc IVr,CDIVr;
+  row IVVc IVrw;
+  Boolean found,testf;
+  record CUVc CUr;
+  record IVVc VirtVatr;
+  row IVVc VirtVatrw;
+  integer results,i,rwcnt,cnt;
+  string 255 tstr;
+  record PDVc PDr;
+  
+  Black_Divider(0,200);
+  StartFormat(15);
+  OutString(0,0,USetStr(39726),false);
+  EndFormat;
+  Black_Divider(0,200);
+  
+  StartFormat(15);
+  EndFormat;
+  
+  cnt = 0;
+  found = true;
+  IVr.TransDate = RepSpec.sStartDate;
+  while (LoopKey("TransDate",IVr,1,found)) begin
+    tstr = "";
+    testf = true;
+    found = DateInRange(IVr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate);
+    
+    if (IVr.OKFlag==0) then begin testf = false; end;
+    if (nonblank(RepSpec.f1) and SetInSet(IVr.PayDeal, RepSpec.f1)) then begin
+      testf = false;
+    end;
+    if (nonblank(RepSpec.f2)) then begin
+      testf = CheckIVVATCode(IVr.SerNr, RepSpec.f2);
+    end;
+    //start cust
+    results = 0;
+    //end cust
+    if (nonblank(RepSpec.ObjStr)) then begin
+          if (SetInSet(RepSpec.ObjStr,IVr.Objects)==false) then begin
+            testf = false;
+          end;
+    end;
+    if (found and testf) then begin
+      RecordNew(VirtVatr);
+      GetInvoicesSums(IVr,VirtVatr,results);
+    end;
+    if (results>0) then begin
+      cnt = cnt + 1;
+      Gray_Divider(0,1);
+      StartFormat(15);
+      OutString(0,0,USetStr(39719),false);
+      OutString(50,0,USetStr(39720),false);
+      OutString(100,0,USetStr(39721),false);
+      if (IVr.ServiceDelDate!=IVr.InvDate and nonblank(IVr.ServiceDelDate)) then begin
+        OutString(250,0,USetStr(39733),false);
+      end;
+      OutString(300,0,USetStr(39722),false);
+      OutString(380,0,USetStr(39723),true);
+      OutString(430,0,USetStr(39724),true);
+      OutString(480,0,USetStr(39725),true);
+      EndFormat;
+     
+      if (nonblank(RepSpec.f4)) then begin
+        if (IVr.SerNr>0) then begin
+          tstr = RepSpec.f4 & IVr.SerNr;
+        end else begin
+          tstr = "";
+        end;
+      end else begin
+        tstr = IVr.OfficialSerNr;
+      end;
+      OutStringID(0,"Dbl3IVVc",tstr,false,IVr.SerNr);
+      OutString(50,0,IVr.TransDate,false);
+      if (IVr.InvType==kInvoiceTypeCredit) then begin
+        OutString(100,0,"KS",false);
+      end else begin
+        if (IVr.Invalid!=0) then begin
+          OutString(100,0,"AN",false);
+        end else begin
+          if (IVr.InvType==kInvoiceTypeDebit) then begin
+            OutString(100,0,"DS",false);
+          end else begin
+            OutString(100,0,"SF",false);
+          end;
+        end;
+      end;
+      PDr.Code = IVr.PayDeal;
+      ReadFirstMain(PDr,1,true);
+      if (PDr.PDType==10) then begin
+        OutString(130,0,"T",false);
+      end;
+      if (IVr.InvType==kInvoiceTypeDebit or IVr.InvType==kInvoiceTypeCredit) then begin
+        MatRowGet(IVr,0,IVrw);
+        CDIVr.SerNr = IVrw.OrdRow;
+        ReadFirstMain(CDIVr,1,true);
+        OutStringID(200,"Dbl3IVVc",RepSpec.f4 & CDIVr.SerNr,true,CDIVr.SerNr);
+        OutString(210,0,CDIVr.TransDate,false);
+      end;
+      if (IVr.ServiceDelDate!=IVr.InvDate and nonblank(IVr.ServiceDelDate)) then begin
+        OutString(250,0,IVr.ServiceDelDate,false);
+      end;
+      rwcnt = MatRowCnt(VirtVatr);
+      for (i=0;i<rwcnt;i=i+1) begin
+        MatRowGet(VirtVatr,i,VirtVatrw);
+        if (i>0) then begin
+          StartFormat(15);
+        end;
+        OutString(300,0,GetVatCode(VirtVatrw.VATCode),false);
+        OutString(380,0,ValToString(VirtVatrw.BasePrice,M4Val,"",".",0),true);
+        OutString(430,0,ValToString(VirtVatrw.Price,M4Val,"",".",0),true);
+        OutString(480,0,ValToString(VirtVatrw.Sum,M4Val,"",".",0),true);
+        EndFormat;
+      end;
+      StartFormat(15);
+      EndFormat;
+      StartFormat(15);
+      CUr.Code = IVr.CustCode; 
+      ReadFirstMain(CUr,1,true);
+      StartFormat(15);
+      OutString(0,0,USetStr(39711),false);
+      OutString(50,0,USetStr(39712),false);
+      OutString(250,0,USetStr(39713),false);
+      OutString(350,0,USetStr(39714),false);
+      OutString(440,0,USetStr(39715),false);
+      EndFormat;
+      OutString(0,"DblCUVc",CUr.Code,false);
+      if (blank(CUr.Name)) then begin
+        OutString(50,0,USetStr(26701),false);
+      end else begin
+        OutString(50,0,left(CUr.Name,100),false);
+      end;
+      if (RepSpec.flags[8]==0) then begin
+        if (nonblank(CUr.VATNr)) then begin
+          OutString(250,0,CUr.VATNr,false);
+        end else begin
+          OutString(250,0,"ND",false);
+        end;
+        if (nonblank(CUr.RegNr1)) then begin
+          OutString(350,0,CUr.RegNr1,false);
+        end else begin
+          OutString(350,0,"ND",false);
+        end;
+      end else begin
+        if (nonblank(CUr.RegNr1)) then begin
+          OutString(250,0,CUr.RegNr1,false);
+        end else begin
+          OutString(250,0,"ND",false);
+        end;
+        if (nonblank(CUr.VATNr)) then begin
+          OutString(350,0,CUr.VATNr,false);
+        end else begin
+          OutString(350,0,"ND",false);
+        end;
+      end;
+      ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false);
+      EndFormat;
+      StartFormat(15);
+      EndFormat;
+      Gray_Divider(0,1);
+    end;
+  end;
+  
+  if (cnt==0) then begin
+    StartFormat(15);
+    OutString(0,0,USetStr(39700),false);
+    EndFormat;
+    StartFormat(15);
+    EndFormat;
+  end else begin
+    StartFormat(15);
+    EndFormat;
+  end;
+  
+  return;
+end;
+
+procedure ExportPayments(record RcVc RepSpec)
+begin
+  Boolean found,testf;
+  record OPVc OPr;
+  row OPVc OPrw;
+  integer i,rwcnt;
+  record VIVc VIr;
+  record CUVc CUr;
+  string 255 tstr;
+  row PMBlock PMrw;
+  Integer cnt;
+  
+  Black_Divider(0,200);
+  StartFormat(15);
+  OutString(0,0,USetStr(39727),false);
+  EndFormat;
+  Black_Divider(0,200);
+  
+  StartFormat(15);
+  EndFormat;
+  
+  StartFormat(15);
+  OutString(0,0,USetStr(39719),false);
+  OutString(50,0,USetStr(39720),false);
+  OutString(110,0,USetStr(39728),false);
+  OutString(220,0,USetStr(39729),false);
+  OutString(280,0,USetStr(39713),false);
+  OutString(420,0,USetStr(39730),true);
+  OutString(480,0,USetStr(39731),true);
+  EndFormat;
+  Gray_Divider(0,1);
+  
+  ResetLoop(OPr);
+  cnt = 0;
+  found = true;
+  OPr.TransDate = RepSpec.sStartDate;
+  while (LoopKey("TransDate",OPr,1,found)) begin
+    if (DateInRange(OPr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin found = false; end;
+    if (found) then begin
+      testf = true;
+      if (OPr.Invalid!=0) then begin testf = false; end;
+      if (OPr.DoneFlag==0) then begin testf = false; end;      
+      GetPMRow(OPr.PayMode,PMrw);     
+      if (PMrw.CheckType!=kPayModeTypeResource) then begin testf = false; end;  
+      if (testf) then begin 
+        cnt = cnt + 1;
+        rwcnt = MatRowCnt(OPr);
+        for (i=0;i<rwcnt;i=i+1) begin
+          tstr = "";
+          MatRowGet(OPr,i,OPrw);
+          StartFormat(15);
+          OutString(0,"DblOPVc",OPr.SerNr,false);
+          OutString(50,0,OPr.TransDate,false);
+          
+          if (nonblank(RepSpec.f4)) then begin
+            if (OPrw.VISerNr>0) then begin
+              tstr = RepSpec.f4 & OPrw.VISerNr;
+            end else begin
+              tstr = "";
+            end;
+          end else begin
+            tstr = OPrw.VISerNr;
+          end;
+          OutStringID(110,"DblVIVc",tstr,false,OPrw.VISerNr);
+          VIr.SerNr = OPrw.VISerNr;
+          ReadFirstMain(VIr,1,true);
+          OutString(220,0,VIr.TransDate,false);
+          CUr.Code = OPrw.VECode; 
+          ReadFirstMain(CUr,1,true);
+          
+          if (RepSpec.flags[8]==0) then begin
+            if (nonblank(CUr.VATNr)) then begin
+              OutStringID(280,"DblCUVc",CUr.VATNr,false,CUr.Code);
+            end else begin
+              OutStringID(280,"DblCUVc","ND",false,CUr.Code);
+            end;
+          end else begin
+            if (nonblank(CUr.RegNr1)) then begin
+              OutStringID(280,"DblCUVc",CUr.RegNr1,false,CUr.Code);
+            end else begin
+              OutStringID(280,"DblCUVc","ND",false,CUr.Code);
+            end;
+          end;
+          OutString(420,0,ValToString(OPrw.BankVal,M4Val,"",".",0),true);
+          OutString(480,0,ValToString(OPrw.VATVal,M4Val,"",".",0),true);
+          EndFormat;
+          Gray_Divider(0,1);
+        end;  
+      end;
+    end;
+  end;
+  
+  if (cnt==0) then begin
+    StartFormat(15);
+    OutString(0,0,USetStr(39700),false);
+    EndFormat;
+    StartFormat(15);
+    EndFormat;
+  end else begin
+    StartFormat(15);
+    EndFormat;
+  end;
+  
+  return;
+end;
+
+procedure ExportReceipts(record RcVc RepSpec)
+begin
+  record IPVc IPr;
+  row IPVc IPrw;
+  Boolean found,testf;
+  integer i,rwcnt;
+  record IVVc IVr;
+  record CUVc CUr;
+  string 255 tstr;
+  row PMBlock PMrw;
+  Integer cnt;
+  
+  Black_Divider(0,200);
+  StartFormat(15);
+  OutString(0,0,USetStr(39732),false);
+  EndFormat;
+  Black_Divider(0,200);
+  
+  StartFormat(15);
+  EndFormat;
+  
+  StartFormat(15);
+  OutString(0,0,USetStr(39719),false);
+  OutString(50,0,USetStr(39720),false);
+  OutString(110,0,USetStr(39728),false);
+  OutString(220,0,USetStr(39729),false);
+  OutString(280,0,USetStr(39713),false);
+  OutString(420,0,USetStr(39730),true);
+  OutString(480,0,USetStr(39731),true);
+  EndFormat;
+  Gray_Divider(0,1);
+  
+  ResetLoop(IPr);
+  cnt = 0;
+  found = true;
+  IPr.TransDate = RepSpec.sStartDate;
+  while (LoopKey("TransDate",IPr,1,found)) begin
+    if (DateInRange(IPr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin found = false; end;
+    if (found) then begin
+      testf = true;
+      if (IPr.Invalid!=0) then begin testf = false; end;
+      if (IPr.OKFlag==0) then begin testf = false; end; 
+      GetPMRow(IPr.PayMode,PMrw);     
+      if (PMrw.CheckType!=kPayModeTypeResource) then begin testf = false; end;     
+      if (testf) then begin
+        cnt = cnt + 1;
+        rwcnt = MatRowCnt(IPr);
+        for (i=0;i<rwcnt;i=i+1) begin
+          tstr = "";
+          MatRowGet(IPr,i,IPrw);
+          StartFormat(15);
+          OutString(0,"DblIPVc",IPr.SerNr,false);
+          OutString(50,0,IPr.TransDate,false);
+          if (nonblank(RepSpec.f4)) then begin
+            if (IPrw.InvoiceNr>0) then begin
+              tstr = RepSpec.f4 & IPrw.InvoiceNr;
+            end else begin
+              tstr = "";
+            end;
+          end else begin
+            tstr = IPrw.InvoiceNr;
+          end;
+          OutStringID(110,"Dbl3IVVc",tstr,false,IPrw.InvoiceNr);
+          IVr.SerNr = IPrw.InvoiceNr;
+          ReadFirstMain(IVr,1,true);
+          OutString(220,0,IVr.TransDate,false);
+          CUr.Code = IPrw.CustCode; 
+          ReadFirstMain(CUr,1,true);
+          if (RepSpec.flags[8]==0) then begin
+            if (nonblank(CUr.VATNr)) then begin
+              OutStringID(280,"DblCUVc",CUr.VATNr,false,CUr.Code);
+            end else begin
+              OutStringID(280,"DblCUVc","ND",false,CUr.Code);
+            end;
+          end else begin
+            if (nonblank(CUr.RegNr1)) then begin
+              OutStringID(280,"DblCUVc",CUr.RegNr1,false,CUr.Code);
+            end else begin
+              OutStringID(280,"DblCUVc","ND",false,CUr.Code);
+            end;
+          end;
+          OutString(420,0,ValToString(IPrw.BankVal,M4Val,"",".",0),true);
+          OutString(480,0,ValToString(IPrw.VATVal,M4Val,"",".",0),true);
+          EndFormat;
+          Gray_Divider(0,1);
+        end;  
+      end;
+    end;
+  end;
+  
+  if (cnt==0) then begin
+    StartFormat(15);
+    OutString(0,0,USetStr(39700),false);
+    EndFormat;
+    StartFormat(15);
+    EndFormat;
+  end else begin
+    StartFormat(15);
+    EndFormat;
+  end;
+  
+  return;
+end;
+
+procedure PrintExpRecord(record RcVc RepSpec, record IVVc VirtVatr)
+begin
+  row IVVc VirtVatrw;
+  record CUVc CUr;
+  integer cnt,i,rwcnt;
+
+
+      cnt = cnt + 1;
+      Gray_Divider(0,1);
+      StartFormat(15);
+      OutString(0,0,USetStr(39719),false);
+      OutString(50,0,USetStr(39720),false);
+      OutString(100,0,USetStr(39721),false);
+
+      OutString(300,0,USetStr(39722),false);
+      OutString(380,0,USetStr(39723),true);
+      OutString(430,0,USetStr(39724),true);
+      OutString(480,0,USetStr(39725),true);
+      EndFormat;
+     
+
+      OutString(0,0,VirtVatr.OfficialSerNr,false);
+      OutString(50,0,VirtVatr.TransDate,false);
+      OutString(100,0,"SF",false);
+
+
+      rwcnt = MatRowCnt(VirtVatr);
+      for (i=0;i<rwcnt;i=i+1) begin
+        MatRowGet(VirtVatr,i,VirtVatrw);
+        if (i>0) then begin
+          StartFormat(15);
+        end;
+        OutString(300,0,VirtVatrw.VATCode,false);
+        OutString(380,0,ValToString(VirtVatrw.BasePrice,M4Val,"",".",0),true);
+        OutString(430,0,ValToString(VirtVatrw.Price,M4Val,"",".",0),true);
+        OutString(480,0,ValToString(VirtVatrw.Sum,M4Val,"",".",0),true);
+        EndFormat;
+      end;
+      StartFormat(15);
+      EndFormat;
+      StartFormat(15);
+      CUr.Code = VirtVatr.CustCode; 
+      ReadFirstMain(CUr,1,true);
+      StartFormat(15);
+      OutString(0,0,USetStr(39711),false);
+      OutString(50,0,USetStr(39712),false);
+      OutString(250,0,USetStr(39713),false);
+      OutString(350,0,USetStr(39714),false);
+      OutString(440,0,USetStr(39715),false);
+      EndFormat;
+      OutString(0,"DblCUVc",CUr.Code,false);
+      if (blank(CUr.Name)) then begin
+        OutString(50,0,USetStr(26701),false);
+      end else begin
+        OutString(50,0,left(CUr.Name,100),false);
+      end;
+      if (RepSpec.flags[8]==0) then begin
+        if (nonblank(CUr.VATNr)) then begin
+          OutString(250,0,CUr.VATNr,false);
+        end else begin
+          OutString(250,0,"ND",false);
+        end;
+        if (nonblank(CUr.RegNr1)) then begin
+          OutString(350,0,CUr.RegNr1,false);
+        end else begin
+          OutString(350,0,"ND",false);
+        end;
+      end else begin
+        if (nonblank(CUr.RegNr1)) then begin
+          OutString(250,0,CUr.RegNr1,false);
+        end else begin
+          OutString(250,0,"ND",false);
+        end;
+        if (nonblank(CUr.VATNr)) then begin
+          OutString(350,0,CUr.VATNr,false);
+        end else begin
+          OutString(350,0,"ND",false);
+        end;
+      end;
+      ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false);
+      EndFormat;
+      StartFormat(15);
+      EndFormat;
+      Gray_Divider(0,1);
+
+return;
+end;
+
+
+procedure GetExpensesSums(record ExpVc Expr,var record IVVc VirtVatr,var val results,string dokno, integer lineno)
+begin
+  integer rwcnt,rwcnt1,j,i;
+  row ExpVc Exprw;
+  row IVVc VirtVatrw;
+  Boolean found;
+  row VATCodeBlock VATCbrw;
+  val sum,vat;
+
+  results = 0;
+  rwcnt = MatRowCnt(Expr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(Expr,i,Exprw);
+    if (nonblank(Exprw.VATCode)) and Exprw.DocNr == dokno  then begin // and dokno != Exprw.dok no and lineno != i
+      found = false;
+      rwcnt1 = MatRowCnt(VirtVatr);
+      GetVATRow(Exprw.VATCode,VATCbrw);
+      for (j=0;j<rwcnt1;j=j+1) begin
+        MatRowGet(VirtVatr,j,VirtVatrw);
+        if (VirtVatrw.VATCode==VATCbrw.PURVATCodeiSAF) and lineno != i then begin 
+          found = true;
+          sum = mulratetobase1(Expr.CurncyCode,Exprw.Sum,Expr.FrRate,Expr.ToRateB1,Expr.ToRateB2,Expr.BaseRate1,Expr.BaseRate2,DefaultCurRoundOff);
+          vat = mulratetobase1(Expr.CurncyCode,Exprw.VATSum,Expr.FrRate,Expr.ToRateB1,Expr.ToRateB2,Expr.BaseRate1,Expr.BaseRate2,DefaultCurRoundOff);
+          VirtVatrw.Sum = VirtVatrw.Sum + sum-vat;
+          VirtVatrw.BasePrice =  VirtVatrw.BasePrice + vat;
+          results = results + 1;
+          MatRowPut(VirtVatr,j,VirtVatrw);
+          goto LNext1;
+        end;
+      end;
+      if (found==false) then begin
+        MatRowGet(VirtVatr,rwcnt1,VirtVatrw);
+        sum = mulratetobase1(Expr.CurncyCode,Exprw.Sum,Expr.FrRate,Expr.ToRateB1,Expr.ToRateB2,Expr.BaseRate1,Expr.BaseRate2,DefaultCurRoundOff);
+        vat = mulratetobase1(Expr.CurncyCode,Exprw.VATSum,Expr.FrRate,Expr.ToRateB1,Expr.ToRateB2,Expr.BaseRate1,Expr.BaseRate2,DefaultCurRoundOff);
+        VirtVatrw.Sum = sum-vat;
+        VirtVatrw.BasePrice = vat;
+        VirtVatrw.VATCode = VATCbrw.PURVATCodeiSAF;
+        VirtVatrw.Price = VATCbrw.ExVatpr;
+        VirtVatr.OfficialSerNr = Exprw.DocNr;
+        VirtVatr.CustCode = Exprw.VECode;
+        VirtVatr.TransDate = Exprw.ExpDate;
+        MatRowPut(VirtVatr,rwcnt1,VirtVatrw);
+        results = results + 1;
+      end;
+LNext1:;
+    end;
+  end;
+  
+  return;
+end;
+
+
+procedure PrintExpVAT(record RcVc RepSpec, record ExpVc Expr)
+begin
+  record CUVc VEr;
+  Boolean testf;
+  record ExpVc Exp2r;
+  row ExpVc Exprw;
+  Integer i, rwcnt;
+  string 20 exp_date,lastno;
+  val sum1, sum3, sum, vat,result;
+  record IVVc VirtVatr;
+  row IVVc VirtVatrw;
+
+  rwcnt = MatRowCnt(Expr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(Expr, i, Exprw);
+    testf = true;
+    if (DateInRange(Exprw.ExpDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin testf = false; end;
+    if Blank(Exprw.DocNr) then begin 
+      testf = false; 
+    end else begin
+      if Exprw.DocNr == lastno then begin
+        testf = false; 
+      end;
+    end;
+
+    if (testf) then begin
+      RecordNew(VirtVatr);
+      GetExpensesSums(Expr,VirtVatr,result,Exprw.DocNr,i);
+      lastno = Exprw.DocNr;
+      if result > 0 then begin
+        PrintExpRecord(RepSpec,VirtVatr);
+      end;
+    end;
+  end;
+  return;
+end;
+
+function Boolean CheckExpense(record ExpVc Expr, string vatcode)
+begin
+  row ExpVc Exprw;
+  Integer i,rwcnt;
+  Boolean result;
+  record CUVc VEr;
+
+  result = false;
+  rwcnt = MatRowCnt(Expr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(Expr,i,Exprw);
+
+    // at least one row with supplier, document no and sum
+    if (nonblank(Exprw.Sum) and
+        nonblank(Exprw.DocNr) and
+        nonblank(Exprw.VECode)) then begin
+      VEr.Code = Exprw.VECode;
+      if (ReadFirstMain(VEr, 1, true)) then begin
+          result = true;
+          goto LCheckExpense;
+      end;
+    end;
+  end; // for
+
+LCheckExpense:;
+  CheckExpense = result;
+  return;
+end;
+
+procedure DoPrintExpenses(record RcVc RepSpec)
+begin
+  record ExpVc Expr;
+  row ExpVc Exprw;
+  string 20 ckey;
+  record SMVc VIVATr;
+  Boolean testf,TrHs,divider,date_in_range;
+
+  divider = false;
+
+    ckey = "TransDate";
+    Expr.TransDate = AddMonth(RepSpec.sStartDate,-2);
+
+
+  TrHs = true;
+  while (LoopKey(ckey, Expr, 1, TrHs)) begin
+    date_in_range = DateInRange(Expr.TransDate, AddMonth(RepSpec.sStartDate,-2), RepSpec.sEndDate);
+    if (date_in_range==false) then begin
+      TrHs = false;
+    end;
+    if (TrHs) then begin
+      testf = true;
+      if (Expr.Invalid != 0) then begin testf = false; end;
+      if (Expr.OKFlag == 0) then begin testf = false; end;
+      if (CheckExpense(Expr, "")==false) then begin testf = false; end;
+      if (date_in_range == false) then begin testf = false; end;
+
+      if (testf) then begin
+        PrintExpVAT(RepSpec, Expr);
+      end;
+    end;
+  end;
+  return;
+end;
+
+
+global
+procedure LitiSAFRn(record RcVc RepSpec)
+begin
+
+  record CYBlock CYb;
+  string 255 filname,tstr;
+  record CUVc BranchIDr;
+  record CUVc AccBr;
+  Integer rw;
+  
+  BlockLoad(CYb);
+  
+  StartReportJob(USetStr(39701));
+  HT2Per(RepSpec.sStartDate,RepSpec.sEndDate,tstr);
+  rw = 1;
+  Header(rw,tstr,1);
+  EndHeader;
+  
+  Black_Divider(0,200);
+  StartFormat(15);
+  OutString(0,0,USetStr(39709),false);
+  EndFormat;
+  Black_Divider(0,200);
+  
+  StartFormat(15);
+  EndFormat;
+  
+  StartFormat(15);
+  OutString(0,0,USetStr(39702),false);
+  OutString(50,0,USetStr(39703),false);
+  OutString(150,0,USetStr(39704),false);
+  OutString(300,0,USetStr(39705),false);
+  EndFormat;
+  
+  Gray_Divider(0,1);
+  StartFormat(15);
+  OutString(0,0,"2.0",false);
+  OutString(50,0,"F",false);
+  OutString(150,0,CurrentDate & "T" & CurrentTime,false);
+  OutString(300,0,CYb.VATNr,false);
+  EndFormat;
+  Gray_Divider(0,1);
+  
+  StartFormat(15);
+  EndFormat;
+  
+  StartFormat(15);
+  OutString(0,0,USetStr(39706),false);
+  OutString(150,0,USetStr(39707),false);
+  OutString(300,0,USetStr(39708),false);
+  EndFormat;
+  
+  Gray_Divider(0,1);
+  StartFormat(15);
+  OutString(0,0,"HansaWorld",false);
+  OutString(150,0,USetStr(1802) & "/" & USetStr(904),false);
+  OutString(300,0,left(USetStr(901),30),false);
+  EndFormat;
+  Gray_Divider(0,1);
+  
+  StartFormat(15);
+  EndFormat;
+  StartFormat(15);
+  EndFormat;
+  
+  ExportCustomers(RepSpec);
+  
+  StartFormat(15);
+  EndFormat;
+  
+  ExportSuppliers(RepSpec);
+  
+  StartFormat(15);
+  EndFormat;
+  
+  ExportPurchaseInvoices(RepSpec);
+  if RepSpec.flags[1] == 1 then begin
+  DoPrintExpenses(RepSpec);
+  end;
+  StartFormat(15);
+  EndFormat;
+  
+  ExportInvoices(RepSpec);
+  
+  StartFormat(15);
+  EndFormat;
+  
+  if (RepSpec.flags[0]==1) then begin
+    ExportPayments(RepSpec);
+    ExportReceipts(RepSpec)
+  end;
+  
+  EndJob;
+  
+  return;
+end;
+

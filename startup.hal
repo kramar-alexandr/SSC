@@ -1,0 +1,349 @@
+#ifdef HAL
+/* This is no longer an Event, make sure you don't have this in */
+//event startup
+event startup
+
+begin
+
+  SetLangMode(LangLithuanian,"LIT",0);
+
+Module("Ataskaitingi asmenys","",730,modExp);
+  Register("Gaminiai","Gaminiai",ProdVc,modSL);
+  Register("Atsiskaitymai","Atsiskaitymai",ExpVc,modPL);
+
+  Report("Atsiskaitym÷ ìurnalas",ExpJRClass,ExpRn,0,modPL);
+  Report("Periodin˜ darbuotoj÷ bðkl˜",PersPerRClass,PersPerRn,0,modPL);
+  Report("Preki÷ liku‹iai (G)",INRClass,InvValRn,0,modIN);
+
+  Setting("Numeravimas - Gaminiai",ProdSerTClass,modSL);
+  Setting("Pristatymo adresai",DelAddrLClass,modSL);
+  Setting("Atsiskaitym÷ parametrai",ExpTClass,modPL);
+  Setting("Numeravimas - Atsiskaitymai",ExpSerTClass,modPL);
+  Setting("Maäinos sv˜rimo parametrai",TruckWTClass,modSL);
+  Setting("Faktðr÷ importo parametrai",VIImportWTClass,modSL);
+
+  Setting("Svorio informacija (Klaip˜da)",WeightLogLClass,modDBMain);
+  Import("Importuoti log failˆ (Klaip˜da)",0,ImportWghtLogIn,modSL);
+
+  Document("Atsiskaitymai",ExpRClass,ExpForm,ExpFClass,modPL);
+  
+  sString(99999,"Negalima priskirti svorio patvirtintai faktðrai");
+	sString(99998,"Prieä tai iäsaugokite °raäˆ");
+	sString(99997,"Uìpildykite paleidìiamos programos keliˆ:Modulis>>Pardavim÷ knyga>>Parametrai>>Maäinos sv˜rimo parametrai");
+	sString(99996,"Uìpildykite komandos pavadinimˆ:Modulis>>Pardavim÷ knyga>>Parametrai>>Maäinos sv˜rimo parametrai");
+	sString(99995,"Uìpildykite importuojamo failo keliˆ:Modulis>>Pardavim÷ knyga>>Parametrai>>Maäinos sv˜rimo parametrai");
+	sString(99994,"Failas nerastas arba nesukurtas");
+	sString(99993,"Prek˜ ne°vesta arba jos kiekis jau uìpildytas");
+	sString(99992,"Prieä tai iäsaugokite");
+	
+	
+  StrSetBegin(3); /* Try to keep them in alphabetical order */
+  //START-CUST   January 29, 2015 by PST
+  StrSetText(AutoFill,"Automatiäkai uìpildyti vaìtaraä‹io numer°");
+  StrSetText(OfficialNoChange,"Neleisti keisti faktðros serijin° numer° ir vaìt. nr.");
+//END-CUST January 29, 2015 by PST
+  StrSetText(AllowAddingINtoRet,"Prid˜ti papildomas prekes Grˆìinimuose");
+  StrSetText(AllowAddingINtoRetPOSIV,"¯kelti prekes ° grˆìintas POS faktðras");
+    StrSetText(AllowAddingOrderDiscount,"Prid˜ti nuolaidˆ ° baro kortel«");
+  StrSetText(AllowCashDiscountIP,"¯kelti nuolaidˆ ° ¯plaukˆ");
+  StrSetText(AllowUsersAdding,"¯kelti vartotojus");
+  StrSetText(AllowWriteoffIP,"¯kelti nuraäymus ° °plaukas");
+  StrSetText(AdminClient,"Admin. klientas");
+  StrSetText(AlertWhenNewVEIV,"Alert when new E-#Purchase Invoice#"); //!!TRANSLATE
+  StrSetText(AllowPrintEInvoicesFromIV,"Leisti spausdinti e-faktðras iä faktðr÷ lango");
+  StrSetText(AllowAmendLine,"Leisti taisymo eilut« Touch screen faktðroms");
+  StrSetText(ApproveSchedImport,"Approve Scheduled Import"); //!!TRANSLATE
+  StrSetText(ApproveSchedMaint,"Approve Scheduled Maintenance"); //!!TRANSLATE
+  StrSetText(AuthExp,"Autorizuoti iälaidas");
+  StrSetText(BUQTToIV,"Faktðra iä biudìeto pasiðlymo");
+  StrSetText(AllowNPTSIVCancel,"Leisti nutraukti touch screen faktðrˆ");
+  StrSetText(AllowCheckinBeforePlanned,"Prisiregistruoti prieä suplanuotˆ datˆ");
+  StrSetText(AllowCheckoutBeforePlanned,"Prisiregistruoti po suplauotos datos");
+  StrSetText(AllowRestAccTransDateChange,"Leisti keisti Bar Tab Datˆ");
+  StrSetText(AllowRestAccSerNrChange,"Keisti Bar Tab numer°");
+  StrSetText(AllowIVBranchIDChange,"Change Branch Code on Invoice");
+  StrSetText(AllowQTBranchIDChange,"Change Branch Code on Quotation");
+  StrSetText(AllowJobBranchIDChange,"Change Branch Code on Reservation");
+  StrSetText(AllowORBranchIDChange,"Change Branch Code on Sales Order");
+  StrSetText(UpdateCashEvent,"Leisti keisti kasos °vykius");
+  StrSetText(AllowCashierCountChange,"Leisti pakeisti kasininko skai‹iavim÷ datˆ");
+  StrSetText(IssueChk,"Pakeisti ‹ekio bðkl«");
+  StrSetText(ChangeOwnCheckClearingDate,"Change Own #Cheque# Clearing Date");
+  StrSetText(AllowCUSerNrChange,"Pakeisti kontakto numer°");
+  StrSetText(ChangingCostOnInvoiceRow,"Leisti keisti savikainˆ faktðros eilut˜se");
+  StrSetText(ChangingCostOnORRow,"Changeing Cost on Sales Order Rows"); //!!TRANSLATE
+  StrSetText(ChangingCostOnPU,"Leisti keisti savikainˆ gavimuose");
+  StrSetText(ChangingCostOnStockMov,"Leisti keisti savikainˆ perk˜limuose");
+  StrSetText(AllowChangeCreditLimit,"Leisti keisti kredito limitˆ");
+  StrSetText(AllowChangeCreditLimitDays,"Leisti keisti kredito limito dienas");
+  StrSetText(AllowCustChange,"Leisti keisti pirk˜jo informacijˆ");
+  StrSetText(AllowDealerChange,"Leisti keisti dilerius");
+  StrSetText(ChangeDiscountMatrixonRestAcc,"Leisti keisti nuolaidos matricˆ baro kortel˜je");
+  StrSetText(ChangeDiscountMatrixonIV,"Leisti keisti nuolaidos matricˆ faktðroje");
+  StrSetText(ChangeDiscountMatrixonIVCash,"Leisti keisti nuolaidos matricˆ POS faktðroje");
+  StrSetText(AllowGuestChange,"Leisti keisti sve‹ius");
+  StrSetText(AllowResClassRTMonChanging,"Leisti keisti kambario klas« kambari÷ perìiðroje");
+  StrSetText(AllowResLocRTMonChanging,"Leisti keisti kambario patalpˆ kambari÷ perìiðroje");
+  StrSetText(AllowRoomChanging,"Leisti pakeisti kambar°");
+  StrSetText(AllowIVInvDateChange,"Leisti keisti faktðros datˆ Datˆ");
+  StrSetText(AllowIVSerNrChange,"Leisti keisti Fakt. Nr.");
+  StrSetText(ChangeSHItemSpec,"Pakeisti Prek˜s apraäymˆ Siuntimuose");
+  StrSetText(ChangeIVItemSpec,"Pakeisti Prek˜s apraäymˆ Faktðrose");
+  StrSetText(ChangeORItemSpec,"Pakeisti Prek˜s apraäymˆ Uìsakymuose");
+  StrSetText(ChangeQTItemSpec,"Pakeisti Prek˜s apraäymˆ Pasiðlymuose");
+  StrSetText(AllowINCostModelChange,"Leisti keisti prek˜s savikainos model°");
+    StrSetText(ChangingINType,"Leisti keisti prek˜s tipˆ");
+  StrSetText(AllowINWeighedAvChange,"Leisti pakeisti prek˜s svertin° vidurk°");
+  StrSetText(IssueOwnChk,"Pakeisti nuosavo ‹ekio bðkl«");
+  StrSetText(ReconciledChequeToEndorsed,"Change #Cheque# State from Reconciled to Endorsed");  
+  StrSetText(EndorsedReconciledChequeToEndorsed,"Change #Cheque# State from Endorsed and Reconciled to Endorsed");
+  StrSetText(ChangeRecordHeaderWhenPending,"Pakeisti °raäo antraät«, kol patvirtinimo bðkl˜ laukiama");
+  StrSetText(ChangeRecordMatrixWhenPending,"Pakeisti °raäo matricˆ, kol patvirtinimo bðkl˜ laukiama");
+  StrSetText(ChangeDateinResourcePlanner,"Pakeisti datas resurs÷ planavime");
+  StrSetText(AllowPasswdChanging,"Leisti pakeisti slaptaìodìius");
+  StrSetText(ChangePrices,"Pakeisti kainas");
+  StrSetText(AllowPOSerNrChange,"Leisti keisti Pirk. uìs. Nr.");
+  StrSetText(AllowQTSerNrChange,"Leisti keisti Pasiðlymo Nr.");
+  StrSetText(AllowReservationChanging,"Leisti keisti rezervacijˆ");
+  StrSetText(ChangeReserved,"Pakeisti rezervavimo bðkl« uìsakymuose ir sand˜lio perk˜limuose");
+  StrSetText(ChangeDropShipOrders,"Pakeisti pardavim÷ ðìsakymˆ su tiesioginio pristatymo tipu"); 
+  StrSetText(AllowORSerNrChange,"Leisti keisti Pard. uìs. Nr.");
+  StrSetText(AllowSalesmanChangeonContact,"Pakeisti pardav˜jˆ kontakte"); 
+  StrSetText(AllowSalesmanChange,"Leisti keisti pardav˜jˆ ant patvirtint÷ pardavimo faktðr÷");
+  StrSetText(AllowSalesmanChangeOnPOS,"Leisti keisti pardav˜jˆ ant POS fakðr÷");
+  StrSetText(AmendLineChangePrice,"Leisti keisti kainˆ taisomoje eilut˜je");
+  StrSetText(AllowSuppInvNoChangeOKVI,"Leisti keisti tiek˜jo faktðros numer° ant OK faktðr÷");
+  StrSetText(AllowSuppChange,"Leisti keisti tiek˜jus");
+  StrSetText(AllowLockingChange,"Leisti keisti uìrakinimˆ");
+  StrSetText(ChangeUnitPrices,"Pakeisti vieneto kainas");
+  StrSetText(ChangingUpdateStockFlag,"Leisti keisti sand˜lio atnaujinimo varnel« faktðrose");
+  StrSetText(PositionStatusChanging,"Leisti keisti pozicijos bðkl«");
+  StrSetText(AllowWSUpdateStockChange,"Leisti keisti 'Darbo kortel˜s atnaujina sand˜l°'");
+  StrSetText(DiffHalcust,"Palyginti halcust & halpatch");
+  StrSetText(CompletingServiceOrders,"Pabaigti Paslaug÷ uìsakymus"); 
+  StrSetText(InvToCO,"Kontraktas iä faktðros");
+  StrSetText(AllowCreateCust,"Leisti kurti klientus");
+  StrSetText(AllowCreateDealer,"Leisti kurti dilerius");
+  StrSetText(AllowCreateGuest,"Leisti kurti sve‹ius");
+  StrSetText(AllowNewCustomerfromNPTS,"Leisti kurti pirk˜jus iä lietimo ekrano POS faktðr÷");
+  StrSetText(AllowCreateSupp,"Leisti kurti tiek˜jus");
+  StrSetText(CreatingWithholdingCertificates,"Creating Withholding Certificates"); //!!TRANSLATE
+  StrSetText(RetPUToVI,"Kredito paìyma iä preki÷ grˆìinimo tiek˜jui");
+  StrSetText(RetToIV,"Kredito paìyma iä preki÷ grˆìinimo");
+  StrSetText(AllowRestAccRowsDelete,"Leisti trinti Prekes on Bar Tab");
+  StrSetText(AllowIVTSRowsDelete,"Leisti trinti prekes on Touch Screen Invoice");
+  StrSetText(DeleteNotOKedInvoiceWithCAE,"Deleting not OKed Invoices with CAE/CAEA"); //!!TRANSLATE
+  StrSetText(DeleteSharedRecord,"Bendr÷ registr÷ °raä÷ paäalinimas");
+  StrSetText(DeleteAnyRecord,"Paäalinti °raäus");
+  StrSetText(ORToSH,"Siuntimas iä uìsakymo");
+  StrSetText(DisallowRetClose,"Neleisti keisti 'Be kredito paìym÷' Grˆìintose prek˜se"); 
+  StrSetText(DisallowPRBudgetChangefornonPRMan,"Neleisti keisti projekto biudìeto jei ne projekto vadovas");
+  StrSetText(DisallowPojectChangefornonPRMan,"Neleisti keisti projekto jei ne projekt÷ vadovas");
+  StrSetText(DisallowPRScheduleChangefornonPRMan,"Neleisti keisti projekto grafiko jei ne projekto vadovas");
+  StrSetText(DisallowChangeIVQtyFromOR,"Uìdrausti pakeisti kiekius faktðrose sukurtose iä Uìaskym÷");
+  StrSetText(DisallowSalesmanChange,"Neleisti keisti pardav˜jo ant nepatvirtintos pardavim÷ faktðros");
+  StrSetText(DisallowIntORClose,"Neleisti uìdaryti vidinio uìsakymo");
+  StrSetText(DisallowORClose,"Neleisti uìdaryti uìsakymo");
+  StrSetText(DisallowCostVariance,"Nelesti savikainos kitimo preki÷ gavimuose");
+  StrSetText(NotOKORToSH,"Neleisti sukurti siuntimo iä nepatvirtinto uìsakymo");
+  StrSetText(NotOKPOToPU,"Neleisti sukurti gavimo iä nepatvirtinto pirkimo uìsakymo");
+  StrSetText(DisallowSerNrItemsOnSR,"Neleisti perkainuoti sand˜lio prek˜ms su serijiniais nr.");
+  StrSetText(DisallownonSerNrItemsOnSR,"Neleisti perkainuoti sand˜lio prek˜ms be serijini÷ nr.");
+  StrSetText(DisallowPostPRActualsfornonPRMan,"Neleisti taisyti projekto jei ne projekto vadovas");
+  StrSetText(DisallowPrepToNotOKOR,"Neleisti iäankstinio apmok˜jimo nepatvirtintam uìsakymui");
+  StrSetText(DisallowPrepToNotOKPO,"Neleisti iäankstinio apmok˜jimo nepatvirtintam pirkimo uìsakymui");
+  StrSetText(DisallowPriceLowerCost,"Neleisti kain÷ ìemesni÷ uì savikainˆ");
+  StrSetText(DisallowPrintCopy,"Neleisti spausdinti kopij÷");
+  StrSetText(DisallowSalesPlain,"Neleisti parduoti paprast÷ preki÷");
+  StrSetText(DisallowSalesService,"Neleisti parduoti paslaug÷ preki÷");
+  StrSetText(DisallowSalesStocked,"Neleisti parduoti sand˜liuojam÷ preki÷");
+  StrSetText(DisallowSalesStructured,"Neleisti parduoti struktðrini÷ preki÷");
+  StrSetText(DisallowDomSales,"Neleisti pardavim÷ vidaus pirk˜jams");
+  StrSetText(DisallowExpSales,"Neleisti pardavim÷ eksporto pirk˜jams");
+  StrSetText(DisallowSaleBelowGP,"Neleisti pardavim÷ su maìesniu nei min. bendrasis pelnas");
+  StrSetText(DisallowWSFromSVO,"Neleisti darbo korteli÷ iä paslaug÷ uìsakym÷");
+  StrSetText(ShowSerialNronPOSInvoices,"Rodyti ser. nr. ant POS faktðr÷");
+  StrSetText(AllowDispute,"Leisti padaryti faktðrˆ abejotina");
+  StrSetText(DownloadHalcust,"Parsisi÷sti halcust & halpatch");
+  StrSetText(POToDownPay,"Downpayment from Purchase Order"); //!!TRANSLATE
+  StrSetText(ORToDownPay,"Leisti iäankst. apmok. iä pardavim÷ uìsakym÷");
+  StrSetText(XXGRToXXGR,"Kopijuoti balanso ir P/N ataskaitos apibr˜ìimus");
+  StrSetText(EditingCAEandCAEExpiry,"Redaguoti CAE ir CAE galiojimo laukus Pardavimo faktðrose"); 
+  StrSetText(EditingWithholdingCertificates,"Editing Withholding Certificates"); //!!TRANSLATE
+  StrSetText(EMailFromAcceptedPO,"El. laiäkai iä priimt÷ pirk. uìs.");
+  StrSetText(EMailFromOKPO,"El. laiäkai iä patvirtint÷ pirk. uìs.");
+  StrSetText(IVToEDIInv,"EDI faktðros iä faktðr÷");
+  StrSetText(EditingWSCostAcc,"Leisti redaguoti savikainos sˆskaitˆ darbo lape");
+  StrSetText(JobELockingSystem,"Elektronin˜ uìrakinimo sistema");
+  StrSetText(POToPU,"Gavimas iä pirkimo uìsakymo");
+  StrSetText(AllowIncorrectSerial,"Neteisingi serijiniai numeriai POS faktðrose"); 
+  StrSetText(ActInvalid,"Sustabdyti veiklˆ");
+  StrSetText(AT2WrofInvalid,"Sustabdyti turto nuraäymus");
+  StrSetText(RestAccInvalid,"Sustabdyti baro kortel«");
+  StrSetText(CLInInvalid,"Sustabdyti kasos pajamas");
+  StrSetText(CLOutInvalid,"Sustabdyti kasos iälaidas");
+  StrSetText(ExpInvalid,"Sustabdyti atsiskaitymus");
+  StrSetText(PUInvalid,"Sustabdyti gavimus");
+  StrSetText(OPInvalid,"Sustabdyti mok˜jimus");
+  StrSetText(PPInvalid,"Sustabdyti iämokas");
+  StrSetText(InvInvalid,"Sustabdyti pardavimo ir pirkimo faktðras");
+  StrSetText(VIInvalid,"Sustabdyti pirkimo faktðras");
+  StrSetText(IVInvalid,"Sustabdyti pardavimo faktðras");
+  StrSetText(InstallHalcust,"¯diegti Halcust & Halpatch");
+  StrSetText(InvalidateInvoice,"Sustabdyti lietimo ekrano faktðras");
+  StrSetText(COToInv,"Faktðra iä kontrakto");
+  StrSetText(JobToInv,"Faktðra iä rezervacijos");
+  StrSetText(SHToInv,"Faktðra iä siuntimo"); 
+  StrSetText(ORToInv,"Faktðra iä uìsakymo");
+  StrSetText(QTToIV,"Faktðra iä pasiðlymo");
+  StrSetText(SVOToInv,"Faktðra iä paslaug÷ uìsakymo");
+  StrSetText(SVOToOffHire,"Prek˜s '°' iä paslaug÷ uìsakymo");
+  StrSetText(SVOToDispatch,"Prek˜s 'iä' iä paslaug÷ uìsakymo");
+  StrSetText(LimitToResLoc,"Riboti vartotojui kambari÷ patalpas");
+  StrSetText(LockIgnoreTR,"Uìrakinimo iäimtys operacijoms");
+  StrSetText(LockIgnoreVI,"Uìrakinimo iäimtys pirkimo faktðroms");
+  StrSetText(LockIgnoreIV,"Uìrakinimo iäimtys pardavimo faktðroms");
+  StrSetText(LockIgnoreAct,"Uìrakinimo iäimtys veikloms");
+  StrSetText(LockIgnoreOther,"Uìrakinimo iäimtys kitiems °raäams");
+  StrSetText(AllowLoginOutsideWorkHours,"Leisti prisijungti ne darbo valandomis");
+  StrSetText(AllowNPTSIVLogout,"Atsijungti lietimo ekrano faktðrose");
+  StrSetText(LogoutUserAfterPrintingBarTab,"Atjungti vartotojˆ atspausdinus baro kortel«");
+  StrSetText(AllowIVTSLoyaltyPointsBonus,"Leisti lojalumo taäkus lietimo ekrano faktðroms");
+  StrSetText(AllowIVTSLoyaltyPayment,"Leisti lojalumo taäk÷ apmok˜jimˆ lietimo ekrano faktðrose");
+  StrSetText(AllowMovingFoliotoRsrv,"Leisti perkelti Folio prekes kitai rezervacijai");
+  StrSetText(AllowManyActiveProd,"Leisti keletˆ aktyvi÷ gamini÷");
+  StrSetText(AllowNegCLIn,"Leisti neigiamas sumas pajamose");
+  StrSetText(AllowNegCLOut,"Leisti neigiamas sumas iälaidose");
+  StrSetText(AllowNegOP,"Leisti neigiamas sumas mok˜jimuose");
+  StrSetText(AllowNegIP,"Leisti neigiamas sumas °plaukose");
+  StrSetText(AllowPOSIVNegQty,"Leisti neigiamus kiekius POS faktðrose");
+  StrSetText(AllowNegativePriceonIV,"Neigiama vnt. kaina Pardavim÷ faktðroje"); 
+  StrSetText(SMToTrans,"Operacijos iä imitacij÷");
+  StrSetText(ActOK,"OKing Veiklas");
+  StrSetText(AT2WrofOK,"Turto nuraäym÷ tvirtinimas");
+  StrSetText(BudOK,"Patvirtinti biudìetus");
+  StrSetText(OKCashIn,"Patvirtinti pajamas");
+  StrSetText(CashInvOK,"Kasos faktðr÷ tvirtinimas");
+  StrSetText(OKCashOut,"Patvirtinti iälaidas");
+  StrSetText(CredInvOK,"Kredito faktðr÷ tvirtinimas");
+  StrSetText(DAOK,"Patvirtinti dienpinigius");
+  StrSetText(SHOK,"Siuntim÷ tvirtinimas");
+  StrSetText(HRMCOChangeOK,"Leisti patvirtinti darbo sutarties pakeitimus");
+  StrSetText(HRMCOOK,"Leisti patvirtinti darbo sutartis");
+  StrSetText(ExpenseOK,"Atsiskaitym÷ tvirtinimas");
+  StrSetText(PUOK,"Gavim÷ tvirtinimas");
+  StrSetText(InvOK,"Faktðr÷ tvirtinimas");
+  StrSetText(HRMJPOK,"Patvirtinti darbo pozicijas");
+  StrSetText(LeaveApplicationOK,"Patvirtinti iä˜jimo paraiäkas");
+  StrSetText(LeaveTransferOK,"Patvirtinti iä˜jimo perk˜limus");
+  StrSetText(OROK,"Patvirtinti uìsakymus");
+  StrSetText(OPOK,"Mok˜jim÷ tvirtinimas");
+  StrSetText(ProdPlanOK,"Gamybos plan÷ tvirtinimas");
+  StrSetText(CredVIOK,"Pirk. kn. kredito faktðr÷ tvirtinimas");
+  StrSetText(VIOK,"Pirkimo faktðr÷ tvirtinimas");
+  StrSetText(POPlanOK,"Pirkim÷ uìsakym÷ plan÷ tvirtinimas");
+  StrSetText(POOK,"Pirkimo uìsakym÷ tvirtinimas");
+  StrSetText(IPOK,"¯plauk÷ tvirtinimas");
+  StrSetText(RetPUOK,"Leisti tvirtinti grˆìintas prekes tiek˜jams");
+  StrSetText(RetOK,"Leisti tvirtinti grˆìintas prekes");
+  StrSetText(RevBudOK,"Patvirtinti patikslintus biudìetus");
+  StrSetText(SalesForecastOK,"Pardavim÷ prognozi÷ tvirtinimas");
+  StrSetText(DropSHOK,"Patvirtinti pristatymo praneäimˆ");
+  StrSetText(HRMSEOK,"Patvirtinti geb˜jim÷ °vertinimus");
+  StrSetText(SDOK,"Nuraäym÷ tvirtinimas");
+  StrSetText(StockPolicyOK,"Sand˜lio taisykli÷ tvirtinimas");
+  StrSetText(SROK,"Patvirtinti sand˜lio perkainavimˆ");
+  StrSetText(TimeSheetOK,"Laiko korteli÷ tvirtinimas");
+  StrSetText(WorkSheetOK,"Darbo lap÷ tvirtinimas");
+  StrSetText(OpenCashDrawer,"Atidaryti kasos stal‹i÷");
+  StrSetText(OpenMarketplace,"Atidaryti E-Parduotuv«");
+  StrSetText(OpenVcFromTBIV,"Atidaryti registrˆ iä projekto operacijos");
+  StrSetText(OpenTRFromSpec,"Atidaryti D/K operacijˆ per meniu Specialus");
+  StrSetText(EDIORToOR,"Uìsakymas iä EDI uìsakymo");
+  StrSetText(QTToOrd,"Uìsakymas iä pasiðlymo");
+  StrSetText(OPOrder,"Mok˜jimo uìsakymas");
+  StrSetText(QTToIVCash,"POS Invoice from Quotation");
+  StrSetText(AllowPOSOfflineChanging,"Leisti POS offline faktðros keitimˆ");
+  StrSetText(IPToPrepIV,"Faktðra iä iäankst. apmok˜jimo");
+  StrSetText(PrintToFiscPrnt,"Spausdinti ° fiskalin° spausdintuvˆ");
+  StrSetText(QTToPR,"Project from Quotation");
+  StrSetText(BUQTToTBBU,"Project Quotation to Budget");
+  StrSetText(VEIVToVI,"Pirkimo faktðra iä el. pirkimo faktðros");
+  StrSetText(PUToVI,"Pirkimo faktðra iä preki÷ gavimo");
+  StrSetText(POCOToVI,"Pirkimo faktðra iä pirk. uìs. kontrakto");
+  StrSetText(POToVI,"Pirkimo faktðra iä pirkimo uìsakymo");
+  StrSetText(IntORToPO,"Pirkimo uìsakymas iä vidinio uìsakymo");
+  StrSetText(ORToPO,"Pirkimo uìsakymas iä uìsakymo");
+  StrSetText(TBBUToPO,"Pirkimo uìsakymas iä projekto biudìeto");
+  StrSetText(POCOToPO,"Pirkimo uìsakymas iä pirk. uìs. kontrakto");
+  StrSetText(POQTToPO,"Pirkimo uìsakymas iä pirkimo pasiðlymo");
+  StrSetText(SVOToPO,"Pirkimo uìsakymas iä paslaug÷ uìsakymo");
+  StrSetText(WSToPO,"Pirkimo uìsakymas iä darbo lapo");
+  StrSetText(StockMovOK,"Sand˜lio perk˜lim÷ gavimas");
+  StrSetText(ReloadBIData,"Reload BI Data"); //!!TRANSLATE
+  StrSetText(AllowNPTSReprint,"Leisti perspausdinti lietimo ekrano faktðros eilutes");
+  //StrSetText(RequestSchedImport,"Request Scheduled Import");
+  StrSetText(RequestSchedMaint,"Request Scheduled Maintenance"); //!!TRANSLATE
+  StrSetText(JobCheckOut,"Rezervacija - Iävykimas");
+  StrSetText(JobAddItem,"Prid˜ti prek« prie rezervacijos");
+  StrSetText(JobChargeStay,"Apmokestinti pragyvenimˆ per rezervacijˆ");
+  StrSetText(JobCheckIn,"Rezervacija - Atvykimas");
+  StrSetText(JobShowAccount,"Rezervacija - Rodyti sˆskaitˆ");
+  StrSetText(JobShowGuestAccount,"Rezervacija - Rodyti sve‹io sˆskaitˆ");
+  StrSetText(JobGenPrepayment,"Rezervacija - Sukurti iäankst. apmok˜jimˆ");
+  StrSetText(AddItemsRsrtEvent,"Poilsiaviet˜s °vykis prid˜ti prekes");
+  StrSetText(RestaurantCustomerOnly,"Restorano klientai tiktai");
+  StrSetText(PUToRetPU,"Grˆìintos prek˜s iä gavimo");
+  StrSetText(ORToRet,"Grˆìintos prek˜s iä uìsakymo");
+  StrSetText(POToRetPU,"Grˆìintos prek˜s iä pirkimo uìsakymo");
+  StrSetText(SVOToRet,"Grˆìintos prek˜s iä paslaug÷ uìsakym÷"); 
+  StrSetText(WSToRet,"Grˆìintos prek˜s iä darbo korteli÷"); 
+  StrSetText(SentStockMovOK,"Sand˜lio perk˜lim÷ siuntimas");
+  StrSetText(SVOToSVGM,"Paslaug÷ atsarg÷ operacija iä paslaug÷ uìsakymo");
+  StrSetText(SendVATDeclNor,"Elektronin˜s PVM deklaracijos siuntimas");
+  StrSetText(POToDropSH,"Pristatymo patvirtinimas iä pirkim÷ uìsakymo");
+  StrSetText(AuthQualCon,"Kokyb˜s kontrol˜");
+  StrSetText(AllowSplitItem,"Leisti padalinti prekes lietimo ekrano faktðrose");
+  StrSetText(IntORToSD,"Sand˜lio nuraäymai iä vidinio uìsakymo");
+  StrSetText(IntORToStockMov,"Perk˜limas iä vidinio uìsakymo");
+  StrSetText(ORToStockMov,"Perk˜limas iä uìsakymo");
+  StrSetText(PRToStockMov,"Sand˜lio perk˜limas iä gaminio");
+  StrSetText(AllowRestAccTransfertoSL,"Leisti perkelti Baro kortel« ° pardavim÷ knygˆ");
+  StrSetText(AllowRestAccTransfertoInvoice,"Leisti perkelti Baro kortel« ° pardavim÷ knygos faktðrˆ");
+  StrSetText(AllowTransfertoQuotation,"Perkelti POS faktðrˆ ° pasiðlymˆ");
+  StrSetText(AllowTransfertoInvoice,"Perkelti POS faktðrˆ ° pardavim÷ knygos faktðrˆ");
+  StrSetText(AllowTransfertoSL,"Leisti perkelti POS faktðras ° pardavim÷ knygˆ");
+  StrSetText(AllowTransfertoOrder,"Leisti perkelti POS faktðras ° uìsakymus");
+  StrSetText(UnOKAll,"Nuimti OK nuo vis÷ °raä÷");
+  StrSetText(UnOKBud,"Nuimti OK nuo biudìet÷");
+  StrSetText(UnOKDA,"Nuimti OK nuo dienpinigi÷");
+  StrSetText(UnOKCashCount,"Nuimti OK nuo kasos skai‹iavim÷");
+  StrSetText(UnOKOR,"Nuimti OK nuo uìsakym÷");
+  StrSetText(UnOKPO,"Nuimti OK nuo pirkimo uìsakym÷");
+  StrSetText(UnOKRevBud,"Nuimti OK nuo patikslint÷ biudìet÷");
+  StrSetText(UpdatePOSEvent,"Leisti atnaujinti POS sesijas");
+  StrSetText(AllowUsingAddonBarTab,"Leisti naudoti 'Prid˜ti' mygtukˆ baro kortel˜je");
+  StrSetText(AllowUsingBookingsonBarTab,"Leisti naudoti 'Uìsakym÷' mygtukˆ baro kortel˜je");
+  StrSetText(AllowUsingPaymentonBarTab,"Leisti naudoti 'Mok˜jimo' mygtukˆ baro kortel˜je");
+  StrSetText(AllowUsingRoomonBarTab,"Leisti naudoti 'Kambario' mygtukˆ baro kortel˜je");
+  StrSetText(AllowUsingSplitonBarTab,"Leisti naudoti 'Padalinti' mygtukˆ baro kortel˜je");
+  StrSetText(AllowUsingSubonBarTab,"Leisti naudoti 'Sub' mygtukˆ baro kortel˜je");
+  StrSetText(ViewBI,"View BI"); //!!TRANSLATE
+  StrSetText(ViewDashboard,"Matyti valdikl°"); //!!TRANSLATE
+  StrSetText(ViewDashboardTopCustomers,"View Dashboard Top Customers"); //!!TRANSLATE
+  StrSetText(ViewDashboardDebCred,"View Dashboard Top Debtors"); //!!TRANSLATE
+  StrSetText(ViewDashboardTopItemGroups,"View Dashboard Top Item Groups"); //!!TRANSLATE
+  StrSetText(ViewDashboardPipeline,"View Dashboard Top Pipeline"); //!!TRANSLATE
+  StrSetText(ViewDashboardPnL,"View Dashboard Top P&L"); //!!TRANSLATE
+  StrSetText(ViewDashboardTopSalesmen,"View Dashboard Top Salesmen"); //!!TRANSLATE
+  StrSetText(ViewCostPrice,"ëiðr˜ti savikainˆ");
+  StrSetText(AllowRestAccRowsVoid,"Leisti anuliuoti Bar Tab  eilut˜se");
+  StrSetText(AllowIVTSRowsVoid,"Leisti anuliuoti P/K lietimo ekrano faktðros eilutes");
+  StrSetText(AllowNPTSIVRowsVoid,"Leisti anuliuoti Touch Screen Invoice eilutes");
+  StrSetText(AllowNoClockInOut,"Leisti dirbti be Clock In/Out veikl÷");
+  EndStrSet;
+
+  return;
+end;
+
+#endif

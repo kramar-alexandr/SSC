@@ -1,0 +1,1491 @@
+external inner procedure ExportPlainXml(string,Integer);
+external inner function string 255 SAFTProductDescription(string,Integer);
+external inner procedure GetVATRow(string,var row VATCodeBlock);
+external inner function Boolean GetPMRow(string,var row PMBlock);
+external inner procedure NewLineExport();
+external inner function val MulRateToBase1(var string,val,val,val,val,val,val,roundmode);
+
+Export("i.SAF",LitTaxXmlEClass,LitTaxXmlEn,modNL); 
+
+event startup
+begin
+  SetLangMode(LangLithuanian, "LIT", 0);
+	Export("i.SAF",LitTaxXmlEClass,LitTaxXmlEn,modNL); 
+
+  return;
+end;
+
+event DefineWindows
+begin
+  real h,v,vm,vs;
+  boolean NextLine;
+  Integer t,flipnr,rcnt;
+  SetLangMode(LangLithuanian,"LIT",0);
+    
+  WindowBegin("Apibr˜ìti i.SAF",LitTaxXmlEClass,CGEcW,RcType); //!!TRANSLATE
+  SetWRect(20,80,400,290);
+  PeriodField(h=100,v=6,"Periodas"); //!!TRANSLATE
+  vs=20; 
+  EditFieldTL(h,v+=vs,150,"Serija",M4UStr,Normal,21,f4,false,0); //!!TRANSLATE
+  EditFieldTL(h,v+=vs,100,"PVM kodas",M4UStr,Normal,20,f2,false,VATCodeSClass); //!!TRANSLATE
+  EditFieldTL(h,v+=vs,80,"Ne°traukti mok. sˆl.",M4UStr,Normal,21,f1,false,PDSClass); //!!TRANSLATE
+  CheckBox(h,v+=30,0,"¯traukti °plaukas ir mok˜jimus",flags[0]); //!!TRANSLATE
+  CheckBox(h,v+=30,0,"¯traukti avansin« apyskaitˆ",flags[1]); //!!TRANSLATE
+  CheckBox(h,v+=16, 0,"Sukeisti °mon˜s kodˆ su PVM mok. kodu",flags[8]); //!!TRANSLATE
+  EndWindow;
+  
+    WindowBegin("PVM kodai",VATCodeTClass,CGHbl,HBlRecType);
+  SetBlid(VATCodeBlock);
+  Sizeable(-1,-1,0,0);
+  h = 20; v = 27;
+
+SetWRect(20,80,790,291);
+  MatrixBegin(h,v,-50,-20,VATCodeRowType,1000);
+flipnr = 0;
+Flip(flipnr); flipnr = flipnr + 1;
+  MatCol(1,34,"Kodas",0,VATCode,false,0);
+    MatCol(1,80,"Ne°sk. %",0,ExVatpr,true,0);
+    MatCol(1,124,"¯sk. %",0,IncVatpr,true,0); 
+    Flip(flipnr); flipnr = flipnr + 1;
+  MatCol(1,164,"Pard. PVM sˆsk.",0,SalesVATAcc,false,AccSClass);
+  MatCol(1,224,"¯pl. sˆsk.",0,PaySalesVATAcc,false,AccSClass);
+  MatCol(1,284,"Pirk. PVM sˆsk.",0,PurchVATAcc,false,AccSClass);
+  MatCol(1,344,"Mok. sˆsk.",0,PayPurchVATAcc,false,AccSClass);
+  MatCol(1,404,"Apraäymas",0,Comment,false,0);
+  MatCol(1,554,"Pard. iSAF kd.",0,VATCodeiSAF,false,0);
+  MatCol(1,634,"Pirk. iSAF kd.",0,PURVATCodeiSAF,true,0);
+  
+    Flip(flipnr); flipnr = flipnr + 1;
+  MatCol(1,164,"Mokes‹. %",0,Tax1pr,true,0);
+
+  MatCol(1,224,"Mokes‹. sˆsk.",0,Tax1Acc,false,AccSClass);
+  MatCol(1,284,"Mokes‹i÷ taisykl˜s",0,TaxRules,false,TaxRulesSClass);
+  MatCol(1,348,"Mokes‹i÷ min.",0,Tax1Min,true,0);
+
+
+      MatCol(1,400,"Tikr. pard.",0,ExcludeFromOfficial,false,SetSClass);
+
+    Flip(flipnr); flipnr = flipnr + 1;
+
+
+  MatCol(1,344,"Apraäymas",0,Comment,false,0);
+
+    Flip(flipnr); flipnr = flipnr + 1;
+  MatCol(1,164,"Kred.pard.PVM sˆsk.",0,CredSalesVATAcc,false,AccSClass);
+  MatCol(1,264,"Kred.pirk.PVM sˆsk.",0,CredPurchVATAcc,false,AccSClass);
+  MatCol(1,364,"Apraäymas",0,Comment,false,0);
+    Flip(flipnr); flipnr = flipnr + 1;
+  MatCol(1,164,"Mokes‹i÷ dispersijos sˆsk.",0,TaxMatrixVariance,false,AccSClass);
+
+  MatCol(1,335,"Galioja iki",0,ValidUntil,false,PasteCurDate);
+  MatCol(1,404,"¯traukti ° sumˆ",0,InclinTotal,false,SetSClass);
+    Flip(flipnr); flipnr = flipnr + 1;
+  MatCol(1,164,"Min. kiekis",0,MinBaseAmount,true,0);
+  MatCol(1,254,"Maks. kiekis",0,MaxBaseAmount,true,0);
+  MatCol(1,-235,"Mok. skai‹iavimo taisykl˜",0,CalcRule,false,SetSClass);
+
+    DeleteRowTest;
+  EndMatrix;
+  
+
+  vs = 20;
+  v = 28;
+    if (flipnr>2) then begin
+      for (t=1;t<flipnr;t=t+1) begin
+        VTab(-35,v,-16,v+vs,ToolFlip,t,chr(asc("A") + t - 1)); 
+        v = v + vs;
+      end;
+    end;
+  EndWindow;
+  
+end;
+
+procedure ExportLevel(Integer level)
+begin
+  string 255 tstr;
+  Integer i;
+  
+  tstr = "";
+  for (i=0;i<level;i=i+1) begin
+    tstr = tstr & "  ";
+  end;
+  ExportPadString(tstr,len(tstr)," ",false);
+  return;
+end;
+
+procedure ExportTagXml(string tag,string pvalue,Integer level)
+begin
+  string 255 value;
+  
+  value = pvalue;
+  ExportLevel(level);
+  ExportPadString("<",1," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);  
+  ExportPadString(value,BytesInString(value),"",false);
+  ExportPadString("</",2," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);
+  NewLineExport;
+  return;
+end;
+
+procedure ExportTagXml1(string tag,string pvalue,Integer level)
+begin
+  string 255 value;
+  
+  value = pvalue;
+  ExportLevel(level);
+  ExportPadString("<",1," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString("><![CDATA[",10," ",false);  
+  ExportPadString(value,BytesInString(value),"",false);
+  ExportPadString("]]></",5," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);
+  NewLineExport;
+  return;
+end;
+
+function Boolean TestReceiptsCustomers(record RcVc RepSpec,string CustCode)
+begin
+  Boolean Res,foundsm,testf;
+  record IPVc IPr;
+  row IPVc IPrw;
+  integer i,rwcnt;
+  row PMBlock PMrw;
+  
+  res = false;
+  ResetLoop(IPr);
+  foundsm = true;
+  IPr.TransDate = RepSpec.sStartDate;
+  while (LoopKey("TransDate",IPr,1,foundsm)) begin
+    if (DateInRange(IPr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin foundsm = false; end;
+    if (foundsm) then begin
+      testf = true;
+      if (IPr.Invalid!=0) then begin testf = false; end;
+      if (IPr.OKFlag==0) then begin testf = false; end;    
+      GetPMRow(IPr.PayMode,PMrw);     
+      if (PMrw.CheckType!=kPayModeTypeResource) then begin testf = false; end;   
+      if (testf) then begin 
+        if (MatRowCnt(IPr)>0) then begin 
+          MatRowGet(IPr,0,IPrw);
+          if (NonBlank(IPrw.CustCode)) then begin
+            if (IPrw.CustCode==CustCode) then begin 
+              res = true;
+              foundsm = false;
+            end;
+          end;
+        end;    
+      end;
+    end;
+  end;
+  TestReceiptsCustomers = res;
+  return;
+end;
+
+function Boolean TestPaymentsCustomers(record RcVc RepSpec,string CustCode)
+begin
+  Boolean Res,foundsm,testf;
+  record OPVc OPr;
+  row OPVc OPrw;
+  integer i,rwcnt;
+  row PMBlock PMrw;
+  
+  res = false;
+  ResetLoop(OPr);
+  foundsm = true;
+  OPr.TransDate = RepSpec.sStartDate;
+  while (LoopKey("TransDate",OPr,1,foundsm)) begin
+    if (DateInRange(OPr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin foundsm = false; end;
+    if (foundsm) then begin
+      testf = true;
+      if (OPr.Invalid!=0) then begin testf = false; end;
+      if (OPr.DoneFlag==0) then begin testf = false; end;   
+      GetPMRow(OPr.PayMode,PMrw);     
+      if (PMrw.CheckType!=kPayModeTypeResource) then begin testf = false; end;     
+      if (testf) then begin 
+        if (MatRowCnt(OPr)>0) then begin 
+          MatRowGet(OPr,0,OPrw);
+          if (nonblank(OPrw.VECode)) then begin
+            if (OPrw.VECode==CustCode) then begin 
+              res = true;
+              foundsm = false;
+            end;
+          end;
+        end;    
+      end;
+    end;
+  end;
+  TestPaymentsCustomers = res;
+  return;
+end;
+
+procedure ExportSAFCountryTag(string DelAddr4,string InvAddr4,string CountryCode,boolean CheckBlankf,integer level)
+begin
+  record CountryVc Countryr;
+
+  if (nonblank(DelAddr4)) then begin
+    Countryr.Comment = DelAddr4;
+    if (ReadFirstKey("Comment",Countryr,1,true)) then begin
+      if (nonblank(Countryr.Code) and len(CountryCode)<3) then begin 
+        ExportTagXml("Country",Countryr.Code,level);
+      end else begin         
+        ExportTagXml("Country","LT",level);
+      end;
+    end;
+    goto LExportSAFTCountryTag;
+  end;
+  
+  if (nonblank(InvAddr4)) then begin
+    Countryr.Comment = InvAddr4;
+    if (ReadFirstKey("Comment",Countryr,1,true)) then begin
+      if (len(Countryr.Code)<3) then begin
+        ExportTagXml("Country",Countryr.Code,level);
+      end else begin
+        ExportTagXml("Country","LT",level);
+      end;
+    end else begin
+      if (nonblank(CountryCode) and len(CountryCode)<3) then begin
+        ExportTagXml("Country",CountryCode,level);          
+      end else begin
+        ExportTagXml("Country","LT",level);
+      end;          
+    end;
+  end else begin
+    if (nonblank(CountryCode) and len(CountryCode)<3) then begin
+      ExportTagXml("Country",CountryCode,level);          
+    end else begin         
+      ExportTagXml("Country","LT",level);
+    end;
+  end;
+LExportSAFTCountryTag:;
+  return;
+end;
+
+procedure ExportCustomers(record RcVc RepSpec,var Integer level)
+begin
+  record CUVc CUr;
+  Boolean found,testf,firstf;
+  record IVVc IVr;
+  
+  firstf = false;
+  found = true;
+  while (LoopMain(CUr,1,found)) begin 
+    testf = false;
+    if (found) then begin
+      testf = true;
+      if (testf) then begin
+        IVr.CustCode = CUr.Code;
+        IVr.InvDate = RepSpec.sStartDate;
+        testf = ReadFirstKey("CustDate",IVr,2,false);
+        if (testf) then begin
+          testf = IVr.CustCode==CUr.Code;
+        end;
+        if (testf) then begin
+          testf = DateInRange(IVr.InvDate,RepSpec.sStartDate,RepSpec.sEndDate);
+        end;
+      end;
+      if (testf==false) then begin
+        if (RepSpec.flags[0]==1) then begin
+          testf = TestReceiptsCustomers(RepSpec,CUr.Code);
+        end;
+      end;
+      if (testf) then begin
+        if (firstf==false) then begin
+          ExportPlainXml("<Customers>",level);
+          level = level + 1;
+        end;
+        firstf = true;
+        ExportPlainXml("<Customer>",level);
+        level = level + 1;
+        ExportTagXml("CustomerID",CUr.Code,level);
+        if (RepSpec.flags[8]==0) then begin
+          if (nonblank(CUr.VATNr)) then begin
+            ExportTagXml("VATRegistrationNumber",CUr.VATNr,level);
+          end else begin
+            ExportTagXml("VATRegistrationNumber","ND",level);
+          end;
+          if (nonblank(CUr.RegNr1)) then begin
+            ExportTagXml("RegistrationNumber",CUr.RegNr1,level);
+          end else begin
+            ExportTagXml("RegistrationNumber","ND",level);
+          end;
+        end else begin
+          if (nonblank(CUr.RegNr1)) then begin
+            ExportTagXml("VATRegistrationNumber",CUr.RegNr1,level);
+          end else begin
+            ExportTagXml("VATRegistrationNumber","ND",level);
+          end;
+          if (nonblank(CUr.VATNr)) then begin
+            ExportTagXml("RegistrationNumber",CUr.VATNr,level);
+          end else begin
+            ExportTagXml("RegistrationNumber","ND",level);
+          end;
+        end;
+        ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false,level);
+        if (blank(CUr.Name)) then begin
+          ExportTagXml1("Name",USetStr(26701),level);
+        end else begin
+          ExportTagXml1("Name",SAFTProductDescription(CUr.Name,100),level);
+        end;
+        level = level - 1;
+        ExportPlainXml("</Customer>",level);
+      end;
+    end;
+  end;
+  if (firstf) then begin
+    level = level - 1;
+    ExportPlainXml("</Customers>",level);
+  end;
+  
+  return;
+end;
+
+procedure ExportSuppliers(record RcVc RepSpec,var Integer level)
+begin
+  record CUVc CUr;
+  Boolean found,testf,firstf;
+  record VIVc VIr;
+  
+  firstf = false;
+  found = true;
+  while (LoopMain(CUr,1,found)) begin 
+    testf = false;
+    if (found) then begin
+      testf = true;
+      if (testf) then begin
+        VIr.VECode = CUr.Code;
+        VIr.TransDate = RepSpec.sEndDate;
+        testf = ReadLastKey("VECodeTransDate",VIr,2,false);
+        if (testf) then begin
+          testf = VIr.VECode==CUr.Code;
+        //start
+        end;
+        if (testf) then begin
+          testf = DateInRange(VIr.InvDate,RepSpec.sStartDate,RepSpec.sEndDate);
+        end;
+        if (testf ==  false) then begin
+          ResetLoop(VIr);
+          VIr.VECode = CUr.Code;
+          VIr.RcvDate = RepSpec.sEndDate;
+          testf = ReadLastKey("VECodeRcvDate",VIr,2,false);
+          if (testf) then begin
+            testf = VIr.VECode==CUr.Code;
+          end;
+          if (testf) then begin
+            testf = DateInRange(VIr.RcvDate,RepSpec.sStartDate,RepSpec.sEndDate);
+		  end;
+        end;
+      end;
+      //end
+      if (testf==false) then begin
+        if (RepSpec.flags[0]==1) then begin
+          testf = TestPaymentsCustomers(RepSpec,CUr.Code);
+        end;
+      end;
+      if (testf) then begin
+        if (firstf==false) then begin
+          ExportPlainXml("<Suppliers>",level);
+          level = level + 1;
+        end;
+        ExportPlainXml("<Supplier>",level);
+        level = level + 1;
+        ExportTagXml("SupplierID",CUr.Code,level);
+        if (RepSpec.flags[8]==0) then begin
+          if (nonblank(CUr.VATNr)) then begin
+            ExportTagXml("VATRegistrationNumber",CUr.VATNr,level);
+          end else begin
+            ExportTagXml("VATRegistrationNumber","ND",level);
+          end;
+          if (nonblank(CUr.RegNr1)) then begin
+            ExportTagXml("RegistrationNumber",CUr.RegNr1,level);
+          end else begin
+            ExportTagXml("RegistrationNumber","ND",level);
+          end;
+        end else begin
+          if (nonblank(CUr.RegNr1)) then begin
+            ExportTagXml("VATRegistrationNumber",CUr.RegNr1,level);
+          end else begin
+            ExportTagXml("VATRegistrationNumber","ND",level);
+          end;
+          if (nonblank(CUr.VATNr)) then begin
+            ExportTagXml("RegistrationNumber",CUr.VATNr,level);
+          end else begin
+            ExportTagXml("RegistrationNumber","ND",level);
+          end;
+        end;
+        ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false,level);
+        if (blank(CUr.Name)) then begin
+          ExportTagXml1("Name",USetStr(26701),level);
+        end else begin
+          ExportTagXml1("Name",SAFTProductDescription(CUr.Name,100),level);
+        end;
+        level = level - 1;
+        ExportPlainXml("</Supplier>",level);
+        firstf = true;
+      end;
+    end;
+  end;
+  if (firstf) then begin
+    level = level - 1;
+    ExportPlainXml("</Suppliers>",level);
+  end;
+  
+  return;
+end;
+
+procedure GetPInvoicesSums(record VIVc VIr,var record IVVc VirtVatr,var integer results)
+begin
+  integer rwcnt,rwcnt1,j,i;
+  row VIVc VIrw;
+  row IVVc VirtVatrw;
+  Boolean found;
+  row VATCodeBlock VATCbrw;
+  val sum;
+    
+  results = 0;
+  rwcnt = MatRowCnt(VIr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(VIr,i,VIrw);
+    if (nonblank(VIrw.VATCode)) then begin
+      found = false;
+      rwcnt1 = MatRowCnt(VirtVatr);
+      for (j=0;j<rwcnt1;j=j+1) begin
+        MatRowGet(VirtVatr,j,VirtVatrw);
+        if (VirtVatrw.VATCode==VIrw.VATCode) then begin
+          found = true;
+          GetVATRow(VIrw.VATCode,VATCbrw);
+          sum = mulratetobase1(VIr.CurncyCode,VIrw.Sum,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
+          VirtVatrw.Sum = VirtVatrw.Sum + sum;
+          VirtVatrw.BasePrice = VirtVatrw.BasePrice + (sum * (VATCbrw.ExVatpr/100));
+          results = results + 1;
+          MatRowPut(VirtVatr,j,VirtVatrw);
+          goto LNext;
+        end;
+      end;
+      if (found==false) then begin
+        MatRowGet(VirtVatr,rwcnt1,VirtVatrw);
+        GetVATRow(VIrw.VATCode,VATCbrw);
+        sum = mulratetobase1(VIr.CurncyCode,VIrw.Sum,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
+        VirtVatrw.Sum = sum;
+        VirtVatrw.BasePrice = VirtVatrw.Sum * (VATCbrw.ExVatpr/100);
+        VirtVatrw.VATCode = VIrw.VATCode;
+        VirtVatrw.Price = VATCbrw.ExVatpr;
+        MatRowPut(VirtVatr,rwcnt1,VirtVatrw);
+        results = results + 1;
+      end;
+LNext:;
+    end;
+  end;
+  
+  return;
+end;
+
+procedure GetInvoicesSums(record IVVc IVr,var record IVVc VirtVatr,var integer results)
+begin
+  integer rwcnt,rwcnt1,j,i;
+  row IVVc IVrw;
+  row IVVc VirtVatrw;
+  Boolean found;
+  row VATCodeBlock VATCbrw;
+  val sum;
+  
+  results = 0;
+  rwcnt = MatRowCnt(IVr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(IVr,i,IVrw);
+    if (nonblank(IVrw.VATCode)) then begin
+      found = false;
+      rwcnt1 = MatRowCnt(VirtVatr);
+      for (j=0;j<rwcnt1;j=j+1) begin
+        MatRowGet(VirtVatr,j,VirtVatrw);
+        if (VirtVatrw.VATCode==IVrw.VATCode) then begin
+          found = true;
+          GetVATRow(IVrw.VATCode,VATCbrw);
+          sum = mulratetobase1(IVr.CurncyCode,IVrw.Sum,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2,DefaultCurRoundOff);
+          if IVr.InclVAT == 0 then begin
+            VirtVatrw.Sum = VirtVatrw.Sum + sum;
+            VirtVatrw.BasePrice = VirtVatrw.BasePrice + (sum * (VATCbrw.ExVatpr/100));
+          end else begin
+            VirtVatrw.BasePrice = VirtVatrw.BasePrice + sum*(VATCbrw.IncVatpr/100);
+            VirtVatrw.Sum = VirtVatrw.Sum +  sum - sum*(VATCbrw.IncVatpr/100);     
+          end;
+          results = results + 1;
+          MatRowPut(VirtVatr,j,VirtVatrw);
+          goto LNext1;
+        end;
+      end;
+      if (found==false) then begin
+        MatRowGet(VirtVatr,rwcnt1,VirtVatrw);
+        GetVATRow(IVrw.VATCode,VATCbrw);
+        sum = mulratetobase1(IVr.CurncyCode,IVrw.Sum,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2,DefaultCurRoundOff);
+        if IVr.InclVAT == 0 then begin
+          VirtVatrw.Sum = sum;
+          VirtVatrw.BasePrice = VirtVatrw.Sum * (VATCbrw.ExVatpr/100);
+        end else begin
+          VirtVatrw.BasePrice = sum*(VATCbrw.IncVatpr/100);
+          VirtVatrw.Sum =  sum - sum*(VATCbrw.IncVatpr/100);     
+        end;
+        VirtVatrw.VATCode = IVrw.VATCode;
+        VirtVatrw.Price = VATCbrw.ExVatpr;
+        MatRowPut(VirtVatr,rwcnt1,VirtVatrw);
+        results = results + 1;
+      end;
+LNext1:;
+    end;
+  end;
+  
+  return;
+end;
+
+function boolean CheckIVVATCode(string sernr, string vat)
+begin
+  record IVVc IVr;
+  row IVVc IVrw;
+  integer i, cnt, vcnt;
+
+  IVr.SerNr = sernr;
+  vcnt = 0;
+  if (ReadFirstMain(IVr,1,true)) then
+  begin
+    cnt = MatRowCnt(IVr);
+    for (i=0;i<cnt;i=i+1) begin
+      MatRowGet(IVr, i, IVrw);
+        if (IVrw.Sum!=0) and (SetInSet(IVrw.VATCode,vat)) then begin
+        vcnt = vcnt + 1;
+      end;
+    end;
+
+  end;
+  CheckIVVATCode = (vcnt>0);
+  return;
+end;
+
+function boolean CheckVIVATCode(string sernr, string vat)
+begin
+  record VIVc VIr;
+  row VIVc VIrw;
+  integer i, cnt, vcnt;
+
+  VIr.SerNr = sernr;
+  vcnt = 0;
+  if (ReadFirstMain(VIr,1,true)) then
+  begin
+    cnt = MatRowCnt(VIr);
+    for (i=0;i<cnt;i=i+1) begin
+      MatRowGet(VIr, i, VIrw);
+        if (VIrw.Sum!=0) and (SetInSet(VIrw.VATCode,vat)) then begin
+        vcnt = vcnt + 1;
+      end;
+    end;
+
+  end;
+  CheckVIVATCode = (vcnt>0);
+  return;
+end;
+
+function string 10 GetVatCode(string vatcode)
+begin
+  string 10 res;
+  record VATCodeBlock VATbr;
+  row VATCodeBlock VATbrw;
+  integer i,rwcnt;
+  
+  blockload(VATbr);
+  rwcnt = MatRowCnt(VATbr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(VATbr,i,VATbrw);
+    if vatcode == VATbrw.VATCode then begin
+	  res = VATbrw.VATCodeiSAF;
+      i = rwcnt;
+    end;
+  end;
+  
+  GetVatCode = res;
+return;
+end;
+
+function string 10 GetPURVatCode(string vatcode)
+begin
+  string 10 res;
+  record VATCodeBlock VATbr;
+  row VATCodeBlock VATbrw;
+  integer i,rwcnt;
+  
+  blockload(VATbr);
+  rwcnt = MatRowCnt(VATbr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(VATbr,i,VATbrw);
+    if vatcode == VATbrw.VATCode then begin
+	  res = VATbrw.PURVATCodeiSAF;
+      i = rwcnt;
+    end;
+  end;
+  
+  GetPURVatCode = res;
+return;
+end;
+
+procedure PrintExpRecord(record RcVc RepSpec, record IVVc VirtVatr,integer levell)
+begin
+  row IVVc VirtVatrw;
+  record CUVc CUr;
+  integer cnt,i,rwcnt,level;
+
+		level = levell;
+      ExportPlainXml("<Invoice>",level);
+      ExportTagXml("InvoiceNo",VirtVatr.OfficialSerNr,level);
+      ExportPlainXml("<SupplierInfo>",level);
+      level = level + 1;
+      ExportTagXml("SupplierID",VirtVatr.CustCode,level);
+      CUr.Code = VirtVatr.CustCode; 
+      ReadFirstMain(CUr,1,true);
+      if (RepSpec.flags[8]==0) then begin
+        if (nonblank(CUr.VATNr)) then begin
+          ExportTagXml("VATRegistrationNumber",CUr.VATNr,level);
+        end else begin
+          ExportTagXml("VATRegistrationNumber","ND",level);
+        end;
+        if (nonblank(CUr.RegNr1)) then begin
+          ExportTagXml("RegistrationNumber",CUr.RegNr1,level);
+        end else begin
+          ExportTagXml("RegistrationNumber","ND",level);
+        end;
+      end else begin
+        if (nonblank(CUr.RegNr1)) then begin
+          ExportTagXml("VATRegistrationNumber",CUr.RegNr1,level);
+        end else begin
+          ExportTagXml("VATRegistrationNumber","ND",level);
+        end;
+        if (nonblank(CUr.VATNr)) then begin
+          ExportTagXml("RegistrationNumber",CUr.VATNr,level);
+        end else begin
+          ExportTagXml("RegistrationNumber","ND",level);
+        end;
+      end;
+      ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false,level);
+      if (blank(CUr.Name)) then begin
+        ExportTagXml1("Name",USetStr(26701),level);
+      end else begin
+        ExportTagXml1("Name",SAFTProductDescription(CUr.Name,100),level);
+      end;
+      level = level - 1;
+      ExportPlainXml("</SupplierInfo>",level);
+      ExportTagXml("InvoiceDate",VirtVatr.TransDate,level);
+      ExportTagXml("InvoiceType","SF",level);
+      ExportTagXml("SpecialTaxation","",level);
+      ExportPlainXml("<References>",level);
+      ExportPlainXml("</References>",level);
+      ExportTagXml("VATPointDate",VirtVatr.TransDate,level);
+      if blank(VirtVatr.TransDate) then begin
+      ExportTagXml("RegistrationAccountDate",VirtVatr.TransDate,level);
+      end else begin
+      ExportTagXml("RegistrationAccountDate",VirtVatr.TransDate,level);
+      end;
+      ExportPlainXml("<DocumentTotals>",level);
+      level = level + 1;
+      rwcnt = MatRowCnt(VirtVatr);
+      for (i=0;i<rwcnt;i=i+1) begin
+        MatRowGet(VirtVatr,i,VirtVatrw);
+        ExportPlainXml("<DocumentTotal>",level);
+        level = level + 1;
+        ExportTagXml("TaxableValue",ValToString(VirtVatrw.Sum,M4Val,"",".",0),level);
+        ExportTagXml("TaxCode",VirtVatrw.VATCode,level);
+        ExportTagXml("TaxPercentage",ValToString(VirtVatrw.Price,M4Val,"",".",0),level);
+        ExportTagXml("Amount",ValToString(VirtVatrw.BasePrice,M4Val,"",".",0),level);
+        level = level - 1;
+        ExportPlainXml("</DocumentTotal>",level);
+      end;
+      level = level - 1;
+      ExportPlainXml("</DocumentTotals>",level);
+      level = level - 1;
+      ExportPlainXml("</Invoice>",level);
+
+return;
+end;
+
+
+procedure GetExpensesSums(record ExpVc Expr,var record IVVc VirtVatr,var val results,string dokno, integer lineno)
+begin
+  integer rwcnt,rwcnt1,j,i;
+  row ExpVc Exprw;
+  row IVVc VirtVatrw;
+  Boolean found;
+  row VATCodeBlock VATCbrw;
+  val sum,vat;
+
+  results = 0;
+  rwcnt = MatRowCnt(Expr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(Expr,i,Exprw);
+    if (nonblank(Exprw.VATCode)) and Exprw.DocNr == dokno  then begin // and dokno != Exprw.dok no and lineno != i
+      found = false;
+      rwcnt1 = MatRowCnt(VirtVatr);
+      GetVATRow(Exprw.VATCode,VATCbrw);
+      for (j=0;j<rwcnt1;j=j+1) begin
+        MatRowGet(VirtVatr,j,VirtVatrw);
+        if (VirtVatrw.VATCode==VATCbrw.PURVATCodeiSAF) and lineno != i then begin 
+          found = true;
+          sum = mulratetobase1(Expr.CurncyCode,Exprw.Sum,Expr.FrRate,Expr.ToRateB1,Expr.ToRateB2,Expr.BaseRate1,Expr.BaseRate2,DefaultCurRoundOff);
+          vat = mulratetobase1(Expr.CurncyCode,Exprw.VATSum,Expr.FrRate,Expr.ToRateB1,Expr.ToRateB2,Expr.BaseRate1,Expr.BaseRate2,DefaultCurRoundOff);
+          VirtVatrw.Sum = VirtVatrw.Sum + sum-vat;
+          VirtVatrw.BasePrice =  VirtVatrw.BasePrice + vat;
+          results = results + 1;
+          MatRowPut(VirtVatr,j,VirtVatrw);
+          goto LNext1;
+        end;
+      end;
+      if (found==false) then begin
+        MatRowGet(VirtVatr,rwcnt1,VirtVatrw);
+        sum = mulratetobase1(Expr.CurncyCode,Exprw.Sum,Expr.FrRate,Expr.ToRateB1,Expr.ToRateB2,Expr.BaseRate1,Expr.BaseRate2,DefaultCurRoundOff);
+        vat = mulratetobase1(Expr.CurncyCode,Exprw.VATSum,Expr.FrRate,Expr.ToRateB1,Expr.ToRateB2,Expr.BaseRate1,Expr.BaseRate2,DefaultCurRoundOff);
+        VirtVatrw.Sum = sum-vat;
+        VirtVatrw.BasePrice = vat;
+        VirtVatrw.VATCode = VATCbrw.PURVATCodeiSAF;
+        VirtVatrw.Price = VATCbrw.ExVatpr;
+        VirtVatr.OfficialSerNr = Exprw.DocNr;
+        VirtVatr.CustCode = Exprw.VECode;
+        VirtVatr.TransDate = Exprw.ExpDate;
+        MatRowPut(VirtVatr,rwcnt1,VirtVatrw);
+        results = results + 1;
+      end;
+LNext1:;
+    end;
+  end;
+  
+  return;
+end;
+
+
+procedure PrintExpVAT(record RcVc RepSpec, record ExpVc Expr,integer level)
+begin
+  record CUVc VEr;
+  Boolean testf;
+  record ExpVc Exp2r;
+  row ExpVc Exprw;
+  Integer i, rwcnt;
+  string 20 exp_date,lastno;
+  val sum1, sum3, sum, vat,result;
+  record IVVc VirtVatr;
+  row IVVc VirtVatrw;
+
+  rwcnt = MatRowCnt(Expr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(Expr, i, Exprw);
+    testf = true;
+    if (DateInRange(Exprw.ExpDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin testf = false; end;
+    if Blank(Exprw.DocNr) then begin 
+      testf = false; 
+    end else begin
+      if Exprw.DocNr == lastno then begin
+        testf = false; 
+      end;
+    end;
+
+    if (testf) then begin
+      RecordNew(VirtVatr);
+      GetExpensesSums(Expr,VirtVatr,result,Exprw.DocNr,i);
+      lastno = Exprw.DocNr;
+      if result > 0 then begin
+        PrintExpRecord(RepSpec,VirtVatr,level);
+      end;
+    end;
+  end;
+  return;
+end;
+
+function Boolean CheckExpense(record ExpVc Expr, string vatcode)
+begin
+  row ExpVc Exprw;
+  Integer i,rwcnt;
+  Boolean result;
+  record CUVc VEr;
+
+  result = false;
+  rwcnt = MatRowCnt(Expr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(Expr,i,Exprw);
+
+    // at least one row with supplier, document no and sum
+    if (nonblank(Exprw.Sum) and
+        nonblank(Exprw.DocNr) and
+        nonblank(Exprw.VECode)) then begin
+      VEr.Code = Exprw.VECode;
+      if (ReadFirstMain(VEr, 1, true)) then begin
+          result = true;
+          goto LCheckExpense;
+      end;
+    end;
+  end; // for
+
+LCheckExpense:;
+  CheckExpense = result;
+  return;
+end;
+
+procedure DoPrintExpenses(record RcVc RepSpec,integer level)
+begin
+  record ExpVc Expr;
+  row ExpVc Exprw;
+  string 20 ckey;
+  record SMVc VIVATr;
+  Boolean testf,TrHs,divider,date_in_range;
+
+  divider = false;
+
+    ckey = "TransDate";
+    Expr.TransDate = AddMonth(RepSpec.sStartDate,-2);
+
+
+  TrHs = true;
+  while (LoopKey(ckey, Expr, 1, TrHs)) begin
+    date_in_range = DateInRange(Expr.TransDate, AddMonth(RepSpec.sStartDate,-2), RepSpec.sEndDate);
+    if (date_in_range==false) then begin
+      TrHs = false;
+    end;
+    if (TrHs) then begin
+      testf = true;
+      if (Expr.Invalid != 0) then begin testf = false; end;
+      if (Expr.OKFlag == 0) then begin testf = false; end;
+      if (CheckExpense(Expr, "")==false) then begin testf = false; end;
+      if (date_in_range == false) then begin testf = false; end;
+
+      if (testf) then begin
+        PrintExpVAT(RepSpec, Expr,level);
+      end;
+    end;
+  end;
+  return;
+end;
+
+
+procedure ExportPurchaseInvoices(record RcVc RepSpec,var Integer level)
+begin
+  record VIVc VIr,DCVIr;
+  row VIVc VIrw;
+  Boolean found,testf,firstf;
+  record CUVc CUr;
+  record IVVc VirtVatr;
+  row IVVc VirtVatrw;
+  integer results,i,rwcnt;
+  string 255 tstr;
+  record PDVc PDr;
+  boolean testf33;
+  
+  firstf = true;
+  found = true;
+  VIr.TransDate = Addmonth(RepSpec.sStartDate,-2);
+  while (LoopKey("TransDate",VIr,1,true)) begin
+    tstr = "";
+    testf33 = false;
+    testf = true;
+    if blank(VIr.RcvDate) then begin
+    found = DateInRange(VIr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate);
+    end else begin
+      found = DateInRange(VIr.RcvDate,RepSpec.sStartDate,RepSpec.sEndDate);
+    end;
+    if (VIr.Invalid!=0) then begin
+      testf = false;
+    end;
+    if (VIr.OKFlag==0) then begin testf = false; end;
+    if (nonblank(RepSpec.f1) and SetInSet(VIr.PayDeal, RepSpec.f1)) then begin
+      testf = false;
+    end;
+    if (nonblank(RepSpec.f2)) then begin
+      testf = CheckVIVATCode(VIr.SerNr, RepSpec.f2);
+    end;
+    //start cust
+    results = 0;
+    //end cust
+    if (found and testf) then begin
+      RecordNew(VirtVatr);
+      GetPInvoicesSums(VIr,VirtVatr,results);
+    end;
+    if (results>0) then begin
+      if (firstf) then begin
+        ExportPlainXml("<PurchaseInvoices>",level);
+        firstf = false;
+        level = level + 1;
+      end;
+      ExportPlainXml("<Invoice>",level);
+      level = level + 1;
+      if (VIr.InvoiceNr!="") then begin
+        tstr = VIr.InvoiceNr;
+      end else begin
+        tstr = "";
+      end;
+      ExportTagXml("InvoiceNo",tstr,level);
+      ExportPlainXml("<SupplierInfo>",level);
+      level = level + 1;
+      ExportTagXml("SupplierID",VIr.VECode,level);
+      CUr.Code = VIr.VECode; 
+      ReadFirstMain(CUr,1,true);
+      if (RepSpec.flags[8]==0) then begin
+        if (nonblank(CUr.VATNr)) then begin
+          ExportTagXml("VATRegistrationNumber",CUr.VATNr,level);
+        end else begin
+          ExportTagXml("VATRegistrationNumber","ND",level);
+        end;
+        if (nonblank(CUr.RegNr1)) then begin
+          ExportTagXml("RegistrationNumber",CUr.RegNr1,level);
+        end else begin
+          ExportTagXml("RegistrationNumber","ND",level);
+        end;
+      end else begin
+        if (nonblank(CUr.RegNr1)) then begin
+          ExportTagXml("VATRegistrationNumber",CUr.RegNr1,level);
+        end else begin
+          ExportTagXml("VATRegistrationNumber","ND",level);
+        end;
+        if (nonblank(CUr.VATNr)) then begin
+          ExportTagXml("RegistrationNumber",CUr.VATNr,level);
+        end else begin
+          ExportTagXml("RegistrationNumber","ND",level);
+        end;
+      end;
+      ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false,level);
+      if (blank(CUr.Name)) then begin
+        ExportTagXml1("Name",USetStr(26701),level);
+      end else begin
+        ExportTagXml1("Name",SAFTProductDescription(CUr.Name,100),level);
+      end;
+      level = level - 1;
+      ExportPlainXml("</SupplierInfo>",level);
+      ExportTagXml("InvoiceDate",VIr.TransDate,level);
+      if (VIr.InvType==kInvoiceTypeCredit) then begin
+        ExportTagXml("InvoiceType","DS",level);
+      end else begin
+        if (VIr.Invalid!=0) then begin
+          ExportTagXml("InvoiceType","AN",level);
+        end else begin
+          if (VIr.InvType==kInvoiceTypeDebit) then begin
+            ExportTagXml("InvoiceType","KS",level);
+            testf33 = true;
+          end else begin
+            ExportTagXml("InvoiceType","SF",level);
+          end;
+        end;
+      end;
+      PDr.Code = VIr.PayDeal;
+      ReadFirstMain(PDr,1,true);
+      if (PDr.PDType==10) then begin
+        ExportTagXml("SpecialTaxation","T",level);
+      end else begin
+        ExportTagXml("SpecialTaxation","",level);
+      end;
+      if (VIr.InvType==kInvoiceTypeDebit or VIr.InvType==kInvoiceTypeCredit) then begin
+        DCVIr.SerNr = VIr.CredInv;
+        if ReadFirstMain(DCVIr,1,true) then begin
+          ExportPlainXml("<References>",level);
+          level = level + 1;
+          ExportPlainXml("<Reference>",level);
+          level = level + 1;
+          ExportTagXml("ReferenceNo",DCVIr.InvoiceNr,level);
+          //ExportTagXml("ReferenceNo",RepSpec.f4 & DCVIr.SerNr,level);
+          ExportTagXml("ReferenceDate",DCVIr.TransDate,level);
+          level = level - 1;
+          ExportPlainXml("</Reference>",level);
+          level = level - 1;
+          ExportPlainXml("</References>",level);
+        end else begin
+          ExportPlainXml("<References>",level);
+          ExportPlainXml("</References>",level);  
+        end;
+      end else begin
+        ExportPlainXml("<References>",level);
+        ExportPlainXml("</References>",level);
+      end;
+      ExportTagXml("VATPointDate",VIr.InvDate,level);
+      if blank(VIr.RcvDate) then begin
+      ExportTagXml("RegistrationAccountDate",VIr.InvDate,level);
+      end else begin
+      ExportTagXml("RegistrationAccountDate",VIr.RcvDate,level);
+      end;
+      ExportPlainXml("<DocumentTotals>",level);
+      level = level + 1;
+      rwcnt = MatRowCnt(VirtVatr);
+      for (i=0;i<rwcnt;i=i+1) begin
+        MatRowGet(VirtVatr,i,VirtVatrw);
+        ExportPlainXml("<DocumentTotal>",level);
+        level = level + 1;
+        if testf33 == false then begin
+        ExportTagXml("TaxableValue",ValToString(VirtVatrw.Sum,M4Val,"",".",0),level);
+        ExportTagXml("TaxCode",GetPURVatCode(VirtVatrw.VATCode),level);
+        ExportTagXml("TaxPercentage",ValToString(VirtVatrw.Price,M4Val,"",".",0),level);
+        ExportTagXml("Amount",ValToString(VirtVatrw.BasePrice,M4Val,"",".",0),level);
+        end else begin
+        ExportTagXml("TaxableValue",ValToString(-VirtVatrw.Sum,M4Val,"",".",0),level);
+        ExportTagXml("TaxCode",GetPURVatCode(VirtVatrw.VATCode),level);
+        ExportTagXml("TaxPercentage",ValToString(VirtVatrw.Price,M4Val,"",".",0),level);
+        ExportTagXml("Amount",ValToString(-VirtVatrw.BasePrice,M4Val,"",".",0),level);
+        end;
+        level = level - 1;
+        ExportPlainXml("</DocumentTotal>",level);
+      end;
+      level = level - 1;
+      ExportPlainXml("</DocumentTotals>",level);
+      level = level - 1;
+      ExportPlainXml("</Invoice>",level);
+    end;
+  end;
+  if (firstf==false) then begin
+    if RepSpec.flags[1] == 1 then begin
+      DoPrintExpenses(RepSpec,level);
+    end;
+    level = level - 1;
+    ExportPlainXml("</PurchaseInvoices>",level);
+  end;
+  
+  return;
+end;
+
+procedure ExportInvoices(record RcVc RepSpec,var Integer level)
+begin
+  record IVVc IVr,CDIVr;
+  row IVVc IVrw;
+  Boolean found,testf,firstf;
+  record CUVc CUr;
+  record IVVc VirtVatr;
+  row IVVc VirtVatrw;
+  integer results,i,rwcnt;
+  string 255 tstr;
+  record PDVc PDr;
+  boolean testf33;
+  
+  firstf = true;
+  found = true;
+  IVr.TransDate = RepSpec.sStartDate;
+  while (LoopKey("TransDate",IVr,1,found)) begin
+    tstr = "";
+    testf33 = false;
+    testf = true;
+    found = DateInRange(IVr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate);
+    if (IVr.Invalid!=0) then begin
+      testf = false;
+    end;
+    if (IVr.OKFlag==0) then begin testf = false; end;
+    if (nonblank(RepSpec.f1) and SetInSet(IVr.PayDeal, RepSpec.f1)) then begin
+      testf = false;
+    end;
+    if (nonblank(RepSpec.f2)) then begin
+      testf = CheckIVVATCode(IVr.SerNr, RepSpec.f2);
+    end;
+    //start cust
+    results = 0;
+    //end cust
+    if (found and testf) then begin
+      RecordNew(VirtVatr);
+      GetInvoicesSums(IVr,VirtVatr,results);
+    end;
+    if (results>0) then begin
+      if (firstf) then begin
+        ExportPlainXml("<SalesInvoices>",level);
+        firstf = false;
+        level = level + 1;
+      end;
+      ExportPlainXml("<Invoice>",level);
+      level = level + 1;
+      if (nonblank(RepSpec.f4)) then begin
+        if (IVr.SerNr>0) then begin
+          tstr = RepSpec.f4 & IVr.SerNr;
+        end else begin
+          tstr = "";
+        end;
+      end else begin
+        tstr = IVr.OfficialSerNr;
+      end;
+      ExportTagXml("InvoiceNo",tstr,level);
+      ExportPlainXml("<CustomerInfo>",level);
+      level = level + 1;
+      ExportTagXml("CustomerID",IVr.CustCode,level);
+      CUr.Code = IVr.CustCode; 
+      ReadFirstMain(CUr,1,true);
+      if (RepSpec.flags[8]==0) then begin
+        if (nonblank(CUr.VATNr)) then begin
+          ExportTagXml("VATRegistrationNumber",CUr.VATNr,level);
+        end else begin
+          ExportTagXml("VATRegistrationNumber","ND",level);
+        end;
+        if (nonblank(CUr.RegNr1)) then begin
+          ExportTagXml("RegistrationNumber",CUr.RegNr1,level);
+        end else begin
+          ExportTagXml("RegistrationNumber","ND",level);
+        end;
+      end else begin
+        if (nonblank(CUr.RegNr1)) then begin
+          ExportTagXml("VATRegistrationNumber",CUr.RegNr1,level);
+        end else begin
+          ExportTagXml("VATRegistrationNumber","ND",level);
+        end;
+        if (nonblank(CUr.VATNr)) then begin
+          ExportTagXml("RegistrationNumber",CUr.VATNr,level);
+        end else begin
+          ExportTagXml("RegistrationNumber","ND",level);
+        end;
+      end;
+      ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false,level);
+      if (blank(CUr.Name)) then begin
+        ExportTagXml1("Name",USetStr(26701),level);
+      end else begin
+        ExportTagXml1("Name",SAFTProductDescription(CUr.Name,100),level);
+      end;
+      level = level - 1;
+      ExportPlainXml("</CustomerInfo>",level);
+      ExportTagXml("InvoiceDate",IVr.TransDate,level);
+      if (IVr.InvType==kInvoiceTypeCredit) then begin
+        ExportTagXml("InvoiceType","KS",level);
+        testf33 = true;
+      end else begin
+        if (IVr.Invalid!=0) then begin
+          ExportTagXml("InvoiceType","AN",level);
+        end else begin
+          if (IVr.InvType==kInvoiceTypeDebit) then begin
+            ExportTagXml("InvoiceType","DS",level);
+          end else begin
+            ExportTagXml("InvoiceType","SF",level);
+          end;
+        end;
+      end;
+      PDr.Code = IVr.PayDeal;
+      ReadFirstMain(PDr,1,true);
+      if (PDr.PDType==10) then begin
+        ExportTagXml("SpecialTaxation","T",level);
+      end else begin
+        ExportTagXml("SpecialTaxation","",level);
+      end;
+      if (IVr.InvType==kInvoiceTypeDebit or IVr.InvType==kInvoiceTypeCredit) then begin
+        MatRowGet(IVr,0,IVrw);
+        CDIVr.SerNr = IVrw.OrdRow;
+        if ReadFirstMain(CDIVr,1,true) then begin
+          ExportPlainXml("<References>",level);
+          level = level + 1;
+          ExportPlainXml("<Reference>",level);
+          level = level + 1;
+          ExportTagXml("ReferenceNo",RepSpec.f4 & IVrw.OrdRow,level);
+          ExportTagXml("ReferenceDate",CDIVr.TransDate,level);
+          level = level - 1;
+          ExportPlainXml("</Reference>",level);
+          level = level - 1;
+          ExportPlainXml("</References>",level);
+        end else begin
+          ExportPlainXml("<References>",level);
+          ExportPlainXml("</References>",level);   
+        end;
+      end else begin
+        ExportPlainXml("<References>",level);
+        ExportPlainXml("</References>",level);
+      end;
+      if (IVr.ServiceDelDate!=IVr.InvDate and nonblank(IVr.ServiceDelDate)) then begin
+        ExportTagXml("VATPointDate",IVr.ServiceDelDate,level);
+      end else begin
+        ExportTagXml("VATPointDate",IVr.TransDate,level);
+      end;
+     // ExportTagXml("RegistrationAccountDate",IVr.TransDate,level);
+      ExportPlainXml("<DocumentTotals>",level);
+      level = level + 1;
+      rwcnt = MatRowCnt(VirtVatr);
+      for (i=0;i<rwcnt;i=i+1) begin
+        MatRowGet(VirtVatr,i,VirtVatrw);
+        ExportPlainXml("<DocumentTotal>",level);
+        level = level + 1;
+        if testf33 == false then begin
+        ExportTagXml("TaxableValue",ValToString(VirtVatrw.Sum,M4Val,"",".",0),level);
+        ExportTagXml("TaxCode",GetVatCode(VirtVatrw.VATCode),level);
+        ExportTagXml("TaxPercentage",ValToString(VirtVatrw.Price,M4Val,"",".",0),level);
+        ExportTagXml("Amount",ValToString(VirtVatrw.BasePrice,M4Val,"",".",0),level);
+        end else begin
+                ExportTagXml("TaxableValue",ValToString(-VirtVatrw.Sum,M4Val,"",".",0),level);
+        ExportTagXml("TaxCode",GetVatCode(VirtVatrw.VATCode),level);
+        ExportTagXml("TaxPercentage",ValToString(VirtVatrw.Price,M4Val,"",".",0),level);
+        ExportTagXml("Amount",ValToString(-VirtVatrw.BasePrice,M4Val,"",".",0),level);
+        end;
+        ExportTagXml("VATPointDate2",IVr.TransDate,level);
+        level = level - 1;
+        ExportPlainXml("</DocumentTotal>",level);
+      end;
+      level = level - 1;
+      ExportPlainXml("</DocumentTotals>",level);
+      level = level - 1;
+      ExportPlainXml("</Invoice>",level);
+    end;
+  end;
+  if (firstf==false) then begin
+    level = level - 1;
+    ExportPlainXml("</SalesInvoices>",level);
+  end;
+  return;
+end;
+
+procedure ExportPayments(record RcVc RepSpec,var Integer level,var Boolean results)
+begin
+  Boolean found,testf;
+  record OPVc OPr;
+  row OPVc OPrw;
+  integer i,rwcnt;
+  record VIVc VIr;
+  record CUVc CUr;
+  string 255 tstr;
+  row PMBlock PMrw;
+  
+  ResetLoop(OPr);
+  found = true;
+  OPr.TransDate = RepSpec.sStartDate;
+  while (LoopKey("TransDate",OPr,1,found)) begin
+    if (DateInRange(OPr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin found = false; end;
+    if (found) then begin
+      testf = true;
+      if (OPr.Invalid!=0) then begin testf = false; end;
+      if (OPr.DoneFlag==0) then begin testf = false; end;  
+      GetPMRow(OPr.PayMode,PMrw);     
+      if (PMrw.CheckType!=kPayModeTypeResource) then begin testf = false; end;   
+      if (testf) then begin 
+        if (results==false) then begin
+          ExportPlainXml("<SettlementsAndPayments>",level);
+          level = level + 1;
+          results = true;
+        end;
+        rwcnt = MatRowCnt(OPr);
+        for (i=0;i<rwcnt;i=i+1) begin
+          tstr = "";
+          MatRowGet(OPr,i,OPrw);
+          ExportPlainXml("<SettlementAndPayment>",level);
+          level = level + 1;
+          ExportTagXml("SettlementType","V",level);
+          ExportTagXml("SettlementRefNo",OPr.SerNr,level);
+          ExportTagXml("SettlementDate",OPr.TransDate,level);
+          ExportPlainXml("<Payment>",level);
+          level = level + 1;
+          ExportTagXml("SupplierCustomerID",OPrw.VECode,level);
+          CUr.Code = OPrw.VECode; 
+          ReadFirstMain(CUr,1,true);
+          if (RepSpec.flags[8]==0) then begin
+            if (nonblank(CUr.VATNr)) then begin
+              ExportTagXml("VATRegistrationNumber",CUr.VATNr,level);
+            end else begin
+              ExportTagXml("VATRegistrationNumber","ND",level);
+            end;
+            if (nonblank(CUr.RegNr1)) then begin
+              ExportTagXml("RegistrationNumber",CUr.RegNr1,level);
+            end else begin
+              ExportTagXml("RegistrationNumber","ND",level);
+            end;
+          end else begin
+            if (nonblank(CUr.RegNr1)) then begin
+              ExportTagXml("VATRegistrationNumber",CUr.RegNr1,level);
+            end else begin
+              ExportTagXml("VATRegistrationNumber","ND",level);
+            end;
+            if (nonblank(CUr.VATNr)) then begin
+              ExportTagXml("RegistrationNumber",CUr.VATNr,level);
+            end else begin
+              ExportTagXml("RegistrationNumber","ND",level);
+            end;
+          end;
+          ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false,level);
+          if (blank(CUr.Name)) then begin
+            ExportTagXml1("Name",USetStr(26701),level);
+          end else begin
+            ExportTagXml1("Name",SAFTProductDescription(CUr.Name,100),level);
+          end;
+          level = level - 1;
+          ExportPlainXml("</Payment>",level);
+          ExportPlainXml("<ReferencesToInvoice>",level);
+          level = level + 1;
+          if (nonblank(RepSpec.f4)) then begin
+            if (OPrw.VISerNr>0) then begin
+              tstr = RepSpec.f4 & OPrw.VISerNr;
+            end else begin
+              tstr = "";
+            end;
+          end else begin
+            tstr = OPrw.VISerNr;
+          end;
+          ExportTagXml("InvoiceNo",tstr,level);
+          VIr.SerNr = OPrw.VISerNr;
+          ReadFirstMain(VIr,1,true);
+          ExportTagXml("InvoiceDate",VIr.TransDate,level);
+          ExportTagXml("Amount",ValToString(OPrw.BankVal,M4Val,"",".",0),level);
+          ExportTagXml("VATAmount",ValToString(OPrw.VATVal,M4Val,"",".",0),level);
+          level = level - 1;
+          ExportPlainXml("</ReferencesToInvoice>",level);
+          level = level - 1;
+          ExportPlainXml("</SettlementAndPayment>",level);
+        end; 
+      end;
+    end;
+  end;
+  
+  return;
+end;
+
+procedure ExportReceipts(record RcVc RepSpec,var Integer level,var Boolean results)
+begin
+  record IPVc IPr;
+  row IPVc IPrw;
+  Boolean found,testf;
+  integer i,rwcnt;
+  record IVVc IVr;
+  record CUVc CUr;
+  string 255 tstr;
+  row PMBlock PMrw;
+  
+  ResetLoop(IPr);
+  found = true;
+  IPr.TransDate = RepSpec.sStartDate;
+  while (LoopKey("TransDate",IPr,1,found)) begin
+    if (DateInRange(IPr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin found = false; end;
+    if (found) then begin
+      testf = true;
+      if (IPr.Invalid!=0) then begin testf = false; end;
+      if (IPr.OKFlag==0) then begin testf = false; end;
+      GetPMRow(IPr.PayMode,PMrw);     
+      if (PMrw.CheckType!=kPayModeTypeResource) then begin testf = false; end;  
+      if (testf) then begin 
+        if (results==false) then begin
+          ExportPlainXml("<SettlementsAndPayments>",level);
+          level = level + 1;
+          results = true;
+        end;
+        rwcnt = MatRowCnt(IPr);
+        for (i=0;i<rwcnt;i=i+1) begin
+          tstr = "";
+          MatRowGet(IPr,i,IPrw);
+          ExportPlainXml("<SettlementAndPayment>",level);
+          level = level + 1;
+          ExportTagXml("SettlementType","G",level);
+          ExportTagXml("SettlementRefNo",IPr.SerNr,level);
+          ExportTagXml("SettlementDate",IPr.TransDate,level);
+          ExportPlainXml("<Payment>",level);
+          level = level + 1;
+          ExportTagXml("SupplierCustomerID",IPrw.CustCode,level);
+          CUr.Code = IPrw.CustCode; 
+          ReadFirstMain(CUr,1,true);
+          if (RepSpec.flags[8]==0) then begin
+            if (nonblank(CUr.VATNr)) then begin
+              ExportTagXml("VATRegistrationNumber",CUr.VATNr,level);
+            end else begin
+              ExportTagXml("VATRegistrationNumber","ND",level);
+            end;
+            if (nonblank(CUr.RegNr1)) then begin
+              ExportTagXml("RegistrationNumber",CUr.RegNr1,level);
+            end else begin
+              ExportTagXml("RegistrationNumber","ND",level);
+            end;
+          end else begin
+            if (nonblank(CUr.RegNr1)) then begin
+              ExportTagXml("VATRegistrationNumber",CUr.RegNr1,level);
+            end else begin
+              ExportTagXml("VATRegistrationNumber","ND",level);
+            end;
+            if (nonblank(CUr.VATNr)) then begin
+              ExportTagXml("RegistrationNumber",CUr.VATNr,level);
+            end else begin
+              ExportTagXml("RegistrationNumber","ND",level);
+            end;
+          end;
+          ExportSAFCountryTag("",CUr.InvAddr4,CUr.CountryCode,false,level);
+          if (blank(CUr.Name)) then begin
+            ExportTagXml1("Name",USetStr(26701),level);
+          end else begin
+            ExportTagXml1("Name",SAFTProductDescription(CUr.Name,100),level);
+          end;
+          level = level - 1;
+          ExportPlainXml("</Payment>",level);
+          ExportPlainXml("<ReferencesToInvoice>",level);
+          level = level + 1;
+          if (nonblank(RepSpec.f4)) then begin
+            if (IPrw.InvoiceNr>0) then begin
+              tstr = RepSpec.f4 & IPrw.InvoiceNr;
+            end else begin
+              tstr = "";
+            end;
+          end else begin
+            tstr = IPrw.InvoiceNr;
+          end;
+          ExportTagXml("InvoiceNo",tstr,level);
+          IVr.SerNr = IPrw.InvoiceNr;
+          ReadFirstMain(IVr,1,true);
+          ExportTagXml("InvoiceDate",IVr.TransDate,level);
+          ExportTagXml("Amount",ValToString(IPrw.BankVal,M4Val,"",".",0),level);
+          ExportTagXml("VATAmount",ValToString(IPrw.VATVal,M4Val,"",".",0),level);
+          level = level - 1;
+          ExportPlainXml("</ReferencesToInvoice>",level);
+          level = level - 1;
+          ExportPlainXml("</SettlementAndPayment>",level);
+        end;  
+      end;
+    end;
+  end;
+  
+  if (results) then begin
+    level = level - 1;
+    ExportPlainXml("</SettlementsAndPayments>",level);
+  end;
+  return;
+end;
+
+//When changing things here please change as well LitSAFRn.hal
+
+global
+procedure LitTaxXmlEn(record RcVc RepSpec)
+begin
+Integer level;
+  record CYBlock CYb;
+  string 255 filname,tstr;
+  record CUVc BranchIDr;
+  record CUVc AccBr;
+  Boolean results;
+  
+  BlockLoad(CYb);
+  SetExportCodePage("UTF-8");
+  results = false;
+  level = 0;
+  ExportPlainXml("<?xml version=""1.0"" encoding=""utf-8""?>",level);
+  ExportPlainXml("<iSAFFile xmlns=""http://www.vmi.lt/cms/imas/isaf"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:doc=""https://www.vmi.lt/cms/isaf/dokumentacija"">",level); 
+  level = level + 1;
+  ExportPlainXml("<Header>",level);
+  level = level + 1;
+  ExportPlainXml("<FileDescription>",level);
+  level = level + 1;
+  ExportTagXml("FileVersion","iSAF1.2",level);
+  ExportTagXml("FileDateCreated",CurrentDate & "T" & CurrentTime,level);
+  ExportTagXml("DataType","F",level);
+  ExportTagXml("SoftwareCompanyName","HansaWorld",level);
+  ExportTagXml("SoftwareName",USetStr(1802) & "/" & USetStr(904),level);
+  ExportTagXml("SoftwareVersion",left(USetStr(901),30),level);
+  ExportTagXml("RegistrationNumber",CYb.OrgNr,level);
+  ExportTagXml("NumberOfParts","1",level);
+  ExportTagXml("PartNumber","1",level);
+  ExportPlainXml("<SelectionCriteria>",level);
+  level = level + 1;
+  level = level - 1;
+  ExportTagXml("SelectionStartDate",RepSpec.sStartDate,level);
+  ExportTagXml("SelectionEndDate",RepSpec.sEndDate,level);
+  ExportPlainXml("</SelectionCriteria>",level);
+  level = level - 1;
+  ExportPlainXml("</FileDescription>",level);
+  level = level - 1;
+  ExportPlainXml("</Header>",level);
+  ExportPlainXml("<MasterFiles>",level);
+  level = level + 1;
+  ExportCustomers(RepSpec,level);
+  ExportSuppliers(RepSpec,level);
+  level = level - 1;
+  ExportPlainXml("</MasterFiles>",level);
+  ExportPlainXml("<SourceDocuments>",level);
+  level = level + 1;
+  ExportPurchaseInvoices(RepSpec,level);
+  ExportInvoices(RepSpec,level);
+  if (RepSpec.flags[0]==1) then begin
+    ExportPayments(RepSpec,level,results);
+    ExportReceipts(RepSpec,level,results)
+  end;
+  level = level - 1;  
+  ExportPlainXml("</SourceDocuments>",level);
+  level = level - 1;  
+  ExportPlainXml("</iSAFFile>",0);  
+  
+  return;
+end;
+

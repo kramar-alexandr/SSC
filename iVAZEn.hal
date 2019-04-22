@@ -1,0 +1,734 @@
+//external inner procedure ExportTagXml(string,string,Integer);
+external inner procedure ExportPlainXml(string,Integer);
+//external function string 255 SAFTProductDescription(string,Integer);
+external inner procedure NewLineExport();
+
+event startup
+begin
+
+  SetLangMode(LangLithuanian,"LIT",0);
+  Export("iVAZ eksportas",iVAZECLass,iVAZExport,modSL);
+  Export("iVAZ eksportas siuntimai",iVAZSHECLass,iVAZSHExport,modSL);
+  Setting("iVAZ parametrai",iVAZTClass,modSL);
+  return;
+end;
+
+event DefineWindows
+begin
+  real h,v,vm,vs;
+  SetLangMode(LangLithuanian,"LIT",0);
+  
+  WindowBegin("iVAZ eksportas",iVAZECLass,CGEcW,RcType);
+  SetWRect(20,40,400,320);
+  vs = 20;
+  EditFieldTL(100,v+=vs,50,"Faktðra",M4UStr,Normal,30,f1,false,0);
+  EndWindow;
+  
+  WindowBegin("iVAZ eksportas siuntimai",iVAZSHECLass,CGEcW,RcType);
+  SetWRect(20,40,400,320);
+  vs = 20;
+  EditFieldTL(100,v+=vs,50,"Siuntimas",M4UStr,Normal,30,f1,false,0);
+  EndWindow;
+  
+  WindowBegin("iVAZ parametrai",iVAZTClass,CGSbl,-);
+  SetBlid(iVAZBlock);
+  SetWRect(20,80,650,300);
+  Sizeable(-1,-1,0,0);
+  h = 100;
+  vs = 20;
+  CheckBox(h,v,0,"Eksportuoti svor°",WeightExpFlag);
+  CheckBox(h,v=v+20,0,"Eksportuoti muitin˜s kodˆ",CustomExpFlag);
+  CheckBox(h,v=v+20,0,"Iäsiuntimo data ir laikas, eksporto data ir laikas",ExpDateTimeFlag);
+  EditField(h+100,v+20,100,"Svorio mato vienetas",Normal,WeightUnit,false,UnitSClass);
+
+  EndWindow;
+  
+end;
+
+
+
+global
+function string 60 iVAZECLassDefaultFileName(record RcVc RepSpec)
+begin
+  string 60 filename;
+  
+  filename = "iVAZ.xml";
+  iVAZECLassDefaultFileName = filename;  
+  return;
+end;
+
+function string 255 LitVATRegFixSpecChars(string str)
+begin
+  string 255 res;
+  res = "<![CDATA[" & str & "]]>";
+  LitVATRegFixSpecChars = res;
+  return;
+end;
+
+procedure ExportLevel(Integer level)
+begin
+  string 255 tstr;
+  Integer i;
+  
+  tstr = "";
+  for (i=0;i<level;i=i+1) begin
+    tstr = tstr & "  ";
+  end;
+  ExportPadString(tstr,len(tstr)," ",false);
+  return;
+end;
+
+procedure ExportTagXml(string tag,string pvalue,Integer level)
+begin
+  string 255 value;
+  
+  value = pvalue;
+  ExportLevel(level);
+  ExportPadString("<",1," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);  
+  ExportPadString(value,BytesInString(value),"",false);
+  ExportPadString("</",2," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);
+  NewLineExport;
+  return;
+end;
+
+global
+procedure iVAZExport(record RcVc RepSpec)
+begin
+  Integer level,rwcnt,i,rwcnt2,ii,cnt;
+  record IVVc IVr;
+  row IVVc IVrw;
+  record CUVc CUr;
+  record INVc INr;
+  record UnitVc Unitr;
+  row UnitVc Unitrw;
+  string 20 tempstr,CustomCode;
+  val GrossWeight,NetWeight;
+  record FreightCompanyVc Freightr; 
+  record LocationVc Locationr; 
+  record DelAddrVc DelAddrr;
+  record CYBlock CYb;
+  record SysFormatBlock SysFormatRec;
+  record iVAZBlock iVAZBr;
+
+  SetLangMode(LangLithuanian,"LIT",0);
+  BlockLoad(SysFormatRec);
+  BlockLoad(CYb);
+  BlockLoad(iVAZBr);
+  
+  IVr.SerNr = RepSpec.f1;
+  if ReadFirstMain(IVr,1,true) then begin
+  SetExportCodePage("UTF-8");
+  level = 0;
+  ExportPlainXml("<?xml version=""1.0""?>",level);
+  ExportPlainXml("<iVAZFile xmlns=""http://www.vmi.lt/cms/imas/ivaz"" xmlns:doc=""https://www.vmi.lt/cms/eivaz/dokumentacija"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xml=""http://www.w3.org/XML/1998/namespace"">",level); 
+  level = level + 1;
+  ExportPlainXml("<FileDescription>",level);
+  level = level + 1;
+  ExportTagXml("FileVersion","iVAZ1.3.3",level);
+  ExportTagXml("FileDateCreated",CurrentDate & "T" & CurrentTime,level);
+  ExportTagXml("SoftwareCompanyName","HansaWorld",level);
+  ExportTagXml("SoftwareName","HansaWorld",level);
+  ExportTagXml("SoftwareVersion","7.2",level);
+  ExportTagXml("CreatorRegistrationNumber",CYb.OrgNr,level);
+  level = level -1;
+  ExportPlainXml("</FileDescription>",level);
+  ExportPlainXml("<TransportDocuments>",level);
+  level = level + 1;
+  ExportPlainXml("<TransportDocument>",level);
+  level = level + 1;
+  ExportPlainXml("<TransportDocumentUID>",level);
+  level = level +1;
+  ExportTagXml("LocalTransportDocumentUID",IVr.SerNr,level); //Nurodomas vaìtaraä‹io reng˜jo vaìtaraä‹iui suteiktas unikalus identifikacinis numeris (UID) reng˜jo informacin˜je sistemoje. áis numeris gali bðti naudojamas konkre‹iam vaìtarä‹io °raäui i.VAZ nustatyti (pvz., ° i.VAZ perduodant informacijˆ apie vaìtaraä‹io duomen÷ keitimˆ ar jo atäaukimˆ)
+  level = level -1;
+  ExportPlainXml("</TransportDocumentUID>",level);
+  ExportTagXml("LocalTransportDocumentNumber",IVr.SerNr,level); //Nurodoma vaìtaraä‹io reng˜jo vaìtaraä‹iui suteikta vaìtaraä‹io serija ir numeris arba tik numeris
+  ExportTagXml("LocalTransportDocumentDate",IVr.InvDate,level);
+  ExportPlainXml("<PlaceOfIssueTransportDocument>",level);
+  level = level + 1;
+  ExportTagXml("FullAddress",LitVATRegFixSpecChars(CYb.Addr0 & " " & CYb.Addr1 & " " & CYb.Addr2),level);
+  level = level - 1;
+  ExportPlainXml("</PlaceOfIssueTransportDocument>",level);
+  if blankdate(IVr.PlanSendDate) or blank(IVr.PlanSendTime) then begin
+    if iVAZBr.ExpDateTimeFlag == 1 then begin
+      ExportTagXml("TimeOfDispatch",Currentdate & "T" & CurrentTime,level);
+    end else begin
+      trace("","KLAIDA: Neuìpildyta siuntimo data arba siuntimo laikas");
+    goto skipf;
+    end;
+  end else begin
+    ExportTagXml("TimeOfDispatch",IVr.PlanSendDate & "T" & IVr.PlanSendTime,level);
+  end;
+ // ExportTagXml("EstimatedTimeOfArrival","2.0",level);
+  ExportPlainXml("<Consignor>",level);
+  level = level + 1;
+  ExportTagXml("RegistrationNumber",CYb.OrgNr,level); // Siuntejo kodas. Nurodomas pervezimo operacijos dalyvio registracijos numeris / kodas (mokesc mokeojo identifikacinis kodas arba kodas uzsienio valstyje). Jeigu  , elementas uzpildomas reiksme ãNDÒ.
+  ExportTagXml("Name",LitVATRegFixSpecChars(CYb.CompName),level);
+  ExportPlainXml("<Address>",level);
+  level = level + 1;
+  ExportTagXml("FullAddress",LitVATRegFixSpecChars(CYb.Addr0 & " " & CYb.Addr1 & " " & CYb.Addr2),level);
+  level = level - 1;
+  ExportPlainXml("</Address>",level);
+  //ExportTagXml("ContactInformation","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</Consignor>",level);
+  ExportPlainXml("<Consignee>",level);
+  level = level + 1;
+  CUr.Code = IVr.CustCode;
+  if ReadFirstMain(CUr,1,true) then begin end;
+  CustomCode = "";
+  if nonblank(CUr.SIPCode) then begin
+    CustomCode = CUr.SIPCode;
+  end;
+  ExportTagXml("RegistrationNumber",CUr.RegNr1,level);
+  ExportTagXml("Name",LitVATRegFixSpecChars(CUr.Name),level);
+  ExportPlainXml("<Address>",level);
+  level = level + 1;
+  ExportTagXml("FullAddress",LitVATRegFixSpecChars(CUr.InvAddr0 & " " & CUr.InvAddr1 & " " & CUr.InvAddr2 & " " & CUr.InvAddr0),level);
+  level = level - 1;
+  ExportPlainXml("</Address>",level);
+  //ExportTagXml("ContactInformation","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</Consignee>",level);
+  Freightr.Code = IVr.FreightCode;
+  if blank(IVr.FreightCode)then begin
+    trace("","KLAIDA: Nenurodyta frachto °mon˜");
+    goto skipf;
+  end;
+  if ReadFirstMain(Freightr,1,true) then begin end;
+  CUr.Code = Freightr.VECode;
+  if ReadFirstMain(CUr,1,true) then begin end;
+  ExportPlainXml("<Transporter>",level);
+  level = level + 1;
+  ExportTagXml("RegistrationNumber",CUr.RegNr1,level);
+  ExportTagXml("Name",LitVATRegFixSpecChars(CUr.Name),level);
+  ExportPlainXml("<TransporterAddress>",level);
+  level = level + 1;
+  ExportTagXml("FullAddress",LitVATRegFixSpecChars(CUr.InvAddr0 & " " & CUr.InvAddr1 & " " & CUr.InvAddr2 & " " & CUr.InvAddr0),level);
+  level = level - 1;
+  ExportPlainXml("</TransporterAddress>",level);
+  //ExportTagXml("ContactInformation","2.0",level);
+  ExportPlainXml("<TransportMeans>",level);
+  level = level + 1;
+  ExportPlainXml("<TransportMean>",level);
+  level = level + 1;
+  ExportTagXml("IdentityOfTransportUnits",Freightr.iVAZNumber,level);
+  ExportTagXml("MarqueModelTransportUnits",LitVATRegFixSpecChars(Freightr.iVAZInfo),level);
+  /*
+  ExportPlainXml("<Seals>",level);
+  level = level + 1;
+  ExportPlainXml("<Seal>",level);
+  level = level + 1;
+  ExportTagXml("IdentityOfCommercialSeal","",level);
+  ExportTagXml("SealInformation","",level);
+  level = level - 1;
+  ExportPlainXml("</Seal>",level);
+  level = level - 1;
+  ExportPlainXml("</Seals>",level);
+  */
+  level = level - 1;
+  ExportPlainXml("</TransportMean>",level);
+  level = level - 1;
+  ExportPlainXml("</TransportMeans>",level);
+  if nonblank(Freightr.iVAZName) and nonblank(Freightr.iVAZSurname) then begin
+  ExportPlainXml("<Drivers>",level);
+  level = level + 1;
+  ExportPlainXml("<Driver>",level);
+  level = level + 1;
+  ExportTagXml("Name",LitVATRegFixSpecChars(Freightr.iVAZName),level);
+  ExportTagXml("Surname",LitVATRegFixSpecChars(Freightr.iVAZSurname),level);
+  level = level - 1;
+  ExportPlainXml("</Driver>",level);
+  level = level - 1;
+  ExportPlainXml("</Drivers>",level);
+  end;
+  level = level - 1;
+  ExportPlainXml("</Transporter>",level);
+  Locationr.Code = IVr.Location;
+  if ReadFirstMain(Locationr,1,true) then begin end;
+  ExportPlainXml("<ShipFrom>",level);
+  level = level + 1;
+  //ExportTagXml("WarehouseID","2.0",level);
+  ExportPlainXml("<LoadAddress>",level);
+  level = level + 1;
+  ExportTagXml("FullAddress",LitVATRegFixSpecChars(Locationr.Addr0 & " " & Locationr.Addr1 & " " & Locationr.Addr2 & " " & Locationr.Addr3),level);
+  level = level - 1;
+  ExportPlainXml("</LoadAddress>",level);
+ // ExportTagXml("ImportCustomOffice","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</ShipFrom>",level);
+  ExportPlainXml("<ShipTo>",level);
+  level = level + 1;
+ // ExportTagXml("WarehouseID","2.0",level);
+  ExportPlainXml("<UnloadAddress>",level);
+  level = level + 1;
+  if blank(IVr.ShipAddr1) then begin
+    ExportTagXml("FullAddress",LitVATRegFixSpecChars(IVr.Addr1 & " " & IVr.Addr2 & " " & IVr.Addr3 & " " & IVr.InvAddr3), level);
+  end else begin
+    ExportTagXml("FullAddress",LitVATRegFixSpecChars(IVr.ShipAddr1 & " " & IVr.ShipAddr2 & " " & IVr.ShipAddr3 & " " & IVr.DelAddr3), level);
+  end;
+  level = level - 1;
+  ExportPlainXml("</UnloadAddress>",level);
+  if iVAZBr.CustomExpFlag == 1 then begin
+    if blank(IVr.FreightCode)then begin
+      trace("","KLAIDA: Pirk˜jo kortel˜je nenurodytas muitin˜s kodas");
+      goto skipf;
+    end;
+    ExportTagXml("ExportCustomOffice",CustomCode,level); // Nurodomas importo / eksporto muitin˜s kodas.
+  end;
+  level = level - 1;
+  ExportPlainXml("</ShipTo>",level);
+  ExportPlainXml("<DeliveryData>",level);
+  level = level + 1;
+  ExportPlainXml("<Products>",level);
+  level = level + 1;
+  rwcnt = MatRowCnt(IVr);
+  cnt = 1;
+  GrossWeight = 0;
+  NetWeight = 0;
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(IVr,i,IVrw);
+    if nonblank(IVrw.ArtCode) then begin
+      INr.Code = IVrw.ArtCode;
+      if ReadFirstMain(INr,1,true) then begin
+        if INr.ItemType == 1 then begin 
+          ExportPlainXml("<Product>",level);
+          level = level + 1;
+          ExportTagXml("ProductLineNumber",cnt,level);
+          ExportTagXml("Quantity",ValToString(IVrw.Quant,M4UVal,"",".",0),level);
+          ExportTagXml("UnitOfMeasure",IVrw.UnitCode,level);
+           ExportTagXml("ProductCode",IVrw.ArtCode,level);
+          // ExportTagXml("AdditionalProductCode","2.0",level);
+          ExportTagXml("ProductDescription",LitVATRegFixSpecChars(INr.Name),level);
+          level = level - 1;
+          ExportPlainXml("</Product>",level);
+          cnt = cnt + 1;
+          GrossWeight = GrossWeight + INr.Weight * IVrw.Quant;
+          NetWeight = NetWeight + INr.NetWeight * IVrw.Quant;
+        end;
+      end;
+    end;
+  end;
+  level = level - 1;
+  ExportPlainXml("</Products>",level);
+  /*
+  ExportPlainXml("<Packages>",level);
+  level = level + 1;
+  ExportPlainXml("<Package>",level);
+  level = level + 1;
+  ExportTagXml("KindOfPackagesCode","",level);
+  ExportTagXml("PackagesID","",level);
+  ExportTagXml("NumberOfPackages","",level);
+  ExportPlainXml("<Seals>",level);
+  level = level + 1;
+  ExportPlainXml("<Seal>",level);
+  level = level + 1;
+  ExportTagXml("IdentityOfCommercialSeal","",level);
+  ExportTagXml("SealInformation","",level);
+  level = level - 1;
+  ExportPlainXml("</Seal>",level);
+  level = level - 1;
+  ExportPlainXml("</Seals>",level);
+  level = level - 1;
+  ExportPlainXml("</Package>",level);
+  level = level - 1;
+  ExportPlainXml("</Packages>",level);
+  */
+  if iVAZBr.WeightExpFlag == 1 then begin
+    ExportPlainXml("<Weight>",level);
+    level = level + 1;
+    ExportTagXml("GrossWeight",ValToString(GrossWeight,M45Val,"",".",0),level);
+    ExportTagXml("NetWeight",ValToString(NetWeight,M45Val,"",".",0),level);
+    ExportTagXml("UnitOfMeasure",iVAZBr.WeightUnit,level);
+    level = level - 1;
+    ExportPlainXml("</Weight>",level);
+  end;
+ // ExportPlainXml("<ClassesAndNumbers>",level);
+ // level = level + 1;
+ // ExportTagXml("ClassAndNumber","2.0",level);
+ // level = level - 1;
+ // ExportPlainXml("</ClassesAndNumbers>",level);
+  
+  ExportTagXml("Value",ValToString(IVr.Sum1,M423Val,"",".",0),level);
+  ExportTagXml("Currency",IVr.CurncyCode,level);
+  //ExportTagXml("ComplementaryDeliveryInformation","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</DeliveryData>",level);
+ /*
+  ExportPlainXml("<ComplementaryTransportInformation>",level);
+  level = level + 1;
+   
+  ExportPlainXml("<PaymentForDelivery>",level);
+  level = level + 1;
+ // ExportTagXml("TypeOfTax","2.0",level);
+ // ExportTagXml("PaymentValue","2.0",level);
+ // ExportTagXml("Currency","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</PaymentForDelivery>",level);
+  ExportPlainXml("<Annexes>",level);
+  level = level + 1;
+  ExportPlainXml("<Annex>",level);
+  level = level + 1;
+  //ExportTagXml("TypeOfDocument","2.0",level);
+  //ExportTagXml("DocumentDate","2.0",level);
+  //ExportTagXml("DocumentNumber","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</Annex>",level);
+  level = level - 1;
+  ExportPlainXml("</Annexes>",level);
+      
+  ExportTagXml("OtherInstructions",IVr.InvComment,level);
+  level = level - 1;
+  ExportPlainXml("</ComplementaryTransportInformation>",level);
+*/
+  level = level - 1;
+  ExportPlainXml("</TransportDocument>",level);
+  level = level - 1;
+  ExportPlainXml("</TransportDocuments>",level);
+  ExportPlainXml("</iVAZFile>",0); 
+  end;
+  
+  skipf:;
+return;
+end;
+
+
+global
+procedure iVAZIVDsm()
+begin
+  record IVVc IVr;
+  record RcVc RepSpec;
+  Integer wn,nwn;
+  string 60 aa;
+
+  wn = CurWindow;
+  GetWindowRecord(wn,IVr);
+  RepSpec.f1 = IVr.SerNr;
+  RepSpec.Media = 2;
+  RepSpec.RsMode = 0;
+  RepSpec.repname = "iVAZExport";
+  nwn = OpenWindow("iVAZECLass",1,0,"","",RepSpec); 
+  return;
+end;
+
+global
+procedure iVAZSHExport(record RcVc RepSpec)
+begin
+  Integer level,rwcnt,i,rwcnt2,ii,cnt;
+  record SHVc IVr;
+  row SHVc IVrw;
+  record CUVc CUr;
+  record INVc INr;
+  record UnitVc Unitr;
+  row UnitVc Unitrw;
+  string 20 tempstr,CustomCode;
+  val GrossWeight,NetWeight;
+  record FreightCompanyVc Freightr; 
+  record LocationVc Locationr; 
+  record DelAddrVc DelAddrr;
+  record CYBlock CYb;
+  record SysFormatBlock SysFormatRec;
+  record iVAZBlock iVAZBr;
+
+  SetLangMode(LangLithuanian,"LIT",0);
+  BlockLoad(SysFormatRec);
+  BlockLoad(CYb);
+  BlockLoad(iVAZBr);
+  
+  IVr.SerNr = RepSpec.f1;
+  if ReadFirstMain(IVr,1,true) then begin
+  SetExportCodePage("UTF-8");
+  level = 0;
+  ExportPlainXml("<?xml version=""1.0""?>",level);
+  ExportPlainXml("<iVAZFile xmlns=""http://www.vmi.lt/cms/imas/ivaz"" xmlns:doc=""https://www.vmi.lt/cms/eivaz/dokumentacija"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xml=""http://www.w3.org/XML/1998/namespace"">",level); 
+  level = level + 1;
+  ExportPlainXml("<FileDescription>",level);
+  level = level + 1;
+  ExportTagXml("FileVersion","iVAZ1.3.3",level);
+  ExportTagXml("FileDateCreated",CurrentDate & "T" & CurrentTime,level);
+  ExportTagXml("SoftwareCompanyName","HansaWorld",level);
+  ExportTagXml("SoftwareName","HansaWorld",level);
+  ExportTagXml("SoftwareVersion","7.2",level);
+  ExportTagXml("CreatorRegistrationNumber",CYb.OrgNr,level);
+  level = level -1;
+  ExportPlainXml("</FileDescription>",level);
+  ExportPlainXml("<TransportDocuments>",level);
+  level = level + 1;
+  ExportPlainXml("<TransportDocument>",level);
+  level = level + 1;
+  ExportPlainXml("<TransportDocumentUID>",level);
+  level = level +1;
+  ExportTagXml("LocalTransportDocumentUID",IVr.SerNr,level); //Nurodomas vaìtaraä‹io reng˜jo vaìtaraä‹iui suteiktas unikalus identifikacinis numeris (UID) reng˜jo informacin˜je sistemoje. áis numeris gali bðti naudojamas konkre‹iam vaìtarä‹io °raäui i.VAZ nustatyti (pvz., ° i.VAZ perduodant informacijˆ apie vaìtaraä‹io duomen÷ keitimˆ ar jo atäaukimˆ)
+  level = level -1;
+  ExportPlainXml("</TransportDocumentUID>",level);
+  ExportTagXml("LocalTransportDocumentNumber",IVr.SerNr,level); //Nurodoma vaìtaraä‹io reng˜jo vaìtaraä‹iui suteikta vaìtaraä‹io serija ir numeris arba tik numeris
+  ExportTagXml("LocalTransportDocumentDate",IVr.ShipDate,level);
+  ExportPlainXml("<PlaceOfIssueTransportDocument>",level);
+  level = level + 1;
+  ExportTagXml("FullAddress",LitVATRegFixSpecChars(CYb.Addr0 & " " & CYb.Addr1 & " " & CYb.Addr2),level);
+  level = level - 1;
+  ExportPlainXml("</PlaceOfIssueTransportDocument>",level);
+  if blankdate(IVr.PlanSendDate) or blank(IVr.PlanSendTime) then begin
+    if iVAZBr.ExpDateTimeFlag == 1 then begin
+      ExportTagXml("TimeOfDispatch",Currentdate & "T" & CurrentTime,level);
+    end else begin
+      trace("","KLAIDA: Neuìpildyta siuntimo data arba siuntimo laikas");
+    goto skipf;
+    end;
+  end else begin
+    ExportTagXml("TimeOfDispatch",IVr.PlanSendDate & "T" & IVr.PlanSendTime,level);
+  end;
+ // ExportTagXml("EstimatedTimeOfArrival","2.0",level);
+  ExportPlainXml("<Consignor>",level);
+  level = level + 1;
+  ExportTagXml("RegistrationNumber",CYb.OrgNr,level); // Siuntejo kodas. Nurodomas pervezimo operacijos dalyvio registracijos numeris / kodas (mokesc mokeojo identifikacinis kodas arba kodas uzsienio valstyje). Jeigu  , elementas uzpildomas reiksme ãNDÒ.
+  ExportTagXml("Name",LitVATRegFixSpecChars(CYb.CompName),level);
+  ExportPlainXml("<Address>",level);
+  level = level + 1;
+  ExportTagXml("FullAddress",LitVATRegFixSpecChars(CYb.Addr0 & " " & CYb.Addr1 & " " & CYb.Addr2),level);
+  level = level - 1;
+  ExportPlainXml("</Address>",level);
+  //ExportTagXml("ContactInformation","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</Consignor>",level);
+  ExportPlainXml("<Consignee>",level);
+  level = level + 1;
+  CUr.Code = IVr.CustCode;
+  if ReadFirstMain(CUr,1,true) then begin end;
+  CustomCode = "";
+  if nonblank(CUr.SIPCode) then begin
+    CustomCode = CUr.SIPCode;
+  end;
+  ExportTagXml("RegistrationNumber",CUr.RegNr1,level);
+  ExportTagXml("Name",LitVATRegFixSpecChars(CUr.Name),level);
+  ExportPlainXml("<Address>",level);
+  level = level + 1;
+  ExportTagXml("FullAddress",LitVATRegFixSpecChars(CUr.InvAddr0 & " " & CUr.InvAddr1 & " " & CUr.InvAddr2 & " " & CUr.InvAddr0),level);
+  level = level - 1;
+  ExportPlainXml("</Address>",level);
+  //ExportTagXml("ContactInformation","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</Consignee>",level);
+  Freightr.Code = IVr.FreightCode;
+  if blank(IVr.FreightCode)then begin
+    trace("","KLAIDA: Nenurodyta frachto °mon˜");
+    goto skipf;
+  end;
+  if ReadFirstMain(Freightr,1,true) then begin end;
+  CUr.Code = Freightr.VECode;
+  if ReadFirstMain(CUr,1,true) then begin end;
+  ExportPlainXml("<Transporter>",level);
+  level = level + 1;
+  ExportTagXml("RegistrationNumber",CUr.RegNr1,level);
+  ExportTagXml("Name",LitVATRegFixSpecChars(CUr.Name),level);
+  ExportPlainXml("<TransporterAddress>",level);
+  level = level + 1;
+  ExportTagXml("FullAddress",LitVATRegFixSpecChars(CUr.InvAddr0 & " " & CUr.InvAddr1 & " " & CUr.InvAddr2 & " " & CUr.InvAddr0),level);
+  level = level - 1;
+  ExportPlainXml("</TransporterAddress>",level);
+  //ExportTagXml("ContactInformation","2.0",level);
+  ExportPlainXml("<TransportMeans>",level);
+  level = level + 1;
+  ExportPlainXml("<TransportMean>",level);
+  level = level + 1;
+  ExportTagXml("IdentityOfTransportUnits",IVr.FreightCompanyRegNr,level);
+  ExportTagXml("MarqueModelTransportUnits",LitVATRegFixSpecChars(IVr.TruckInfo),level);
+  /*
+  ExportPlainXml("<Seals>",level);
+  level = level + 1;
+  ExportPlainXml("<Seal>",level);
+  level = level + 1;
+  ExportTagXml("IdentityOfCommercialSeal","",level);
+  ExportTagXml("SealInformation","",level);
+  level = level - 1;
+  ExportPlainXml("</Seal>",level);
+  level = level - 1;
+  ExportPlainXml("</Seals>",level);
+  */
+  level = level - 1;
+  ExportPlainXml("</TransportMean>",level);
+  level = level - 1;
+  ExportPlainXml("</TransportMeans>",level);
+  if nonblank(IVr.Driver) and nonblank(IVr.CMRText) then begin
+  ExportPlainXml("<Drivers>",level);
+  level = level + 1;
+  ExportPlainXml("<Driver>",level);
+  level = level + 1;
+  ExportTagXml("Name",LitVATRegFixSpecChars(IVr.Driver),level);
+  ExportTagXml("Surname",LitVATRegFixSpecChars(IVr.CMRText),level);
+  level = level - 1;
+  ExportPlainXml("</Driver>",level);
+  level = level - 1;
+  ExportPlainXml("</Drivers>",level);
+  end;
+  level = level - 1;
+  ExportPlainXml("</Transporter>",level);
+  Locationr.Code = IVr.Location;
+  if ReadFirstMain(Locationr,1,true) then begin end;
+  ExportPlainXml("<ShipFrom>",level);
+  level = level + 1;
+  //ExportTagXml("WarehouseID","2.0",level);
+  ExportPlainXml("<LoadAddress>",level);
+  level = level + 1;
+  ExportTagXml("FullAddress",LitVATRegFixSpecChars(Locationr.Addr0 & " " & Locationr.Addr1 & " " & Locationr.Addr2 & " " & Locationr.Addr3),level);
+  level = level - 1;
+  ExportPlainXml("</LoadAddress>",level);
+ // ExportTagXml("ImportCustomOffice","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</ShipFrom>",level);
+  ExportPlainXml("<ShipTo>",level);
+  level = level + 1;
+ // ExportTagXml("WarehouseID","2.0",level);
+  ExportPlainXml("<UnloadAddress>",level);
+  level = level + 1;
+ // if blank(IVr.Addr1) then begin
+    ExportTagXml("FullAddress",LitVATRegFixSpecChars(IVr.Addr1 & " " & IVr.Addr2 & " " & IVr.Addr3 & " " & IVr.DelAddr3), level);
+  //end else begin
+   // ExportTagXml("FullAddress",LitVATRegFixSpecChars(IVr.ShipAddr1 & " " & IVr.ShipAddr2 & " " & IVr.ShipAddr3 & " " & IVr.DelAddr3), level);
+  //end;
+  level = level - 1;
+  ExportPlainXml("</UnloadAddress>",level);
+  if iVAZBr.CustomExpFlag == 1 then begin
+    if blank(IVr.FreightCode)then begin
+      trace("","KLAIDA: Pirk˜jo kortel˜je nenurodytas muitin˜s kodas");
+      goto skipf;
+    end;
+    ExportTagXml("ExportCustomOffice",CustomCode,level); // Nurodomas importo / eksporto muitin˜s kodas.
+  end;
+  level = level - 1;
+  ExportPlainXml("</ShipTo>",level);
+  ExportPlainXml("<DeliveryData>",level);
+  level = level + 1;
+  ExportPlainXml("<Products>",level);
+  level = level + 1;
+  rwcnt = MatRowCnt(IVr);
+  cnt = 1;
+  GrossWeight = 0;
+  NetWeight = 0;
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(IVr,i,IVrw);
+    if nonblank(IVrw.ArtCode) then begin
+      INr.Code = IVrw.ArtCode;
+      if ReadFirstMain(INr,1,true) then begin
+        if INr.ItemType == 1 then begin 
+          ExportPlainXml("<Product>",level);
+          level = level + 1;
+          ExportTagXml("ProductLineNumber",cnt,level);
+          ExportTagXml("Quantity",ValToString(IVrw.Ship,M4UVal,"",".",0),level);
+          ExportTagXml("UnitOfMeasure",IVrw.UnitCode,level);
+           ExportTagXml("ProductCode",IVrw.ArtCode,level);
+          // ExportTagXml("AdditionalProductCode","2.0",level);
+          ExportTagXml("ProductDescription",LitVATRegFixSpecChars(INr.Name),level);
+          level = level - 1;
+          ExportPlainXml("</Product>",level);
+          cnt = cnt + 1;
+          GrossWeight = GrossWeight + INr.Weight * IVrw.Ship;
+          NetWeight = NetWeight + INr.NetWeight * IVrw.Ship;
+        end;
+      end;
+    end;
+  end;
+  level = level - 1;
+  ExportPlainXml("</Products>",level);
+  /*
+  ExportPlainXml("<Packages>",level);
+  level = level + 1;
+  ExportPlainXml("<Package>",level);
+  level = level + 1;
+  ExportTagXml("KindOfPackagesCode","",level);
+  ExportTagXml("PackagesID","",level);
+  ExportTagXml("NumberOfPackages","",level);
+  ExportPlainXml("<Seals>",level);
+  level = level + 1;
+  ExportPlainXml("<Seal>",level);
+  level = level + 1;
+  ExportTagXml("IdentityOfCommercialSeal","",level);
+  ExportTagXml("SealInformation","",level);
+  level = level - 1;
+  ExportPlainXml("</Seal>",level);
+  level = level - 1;
+  ExportPlainXml("</Seals>",level);
+  level = level - 1;
+  ExportPlainXml("</Package>",level);
+  level = level - 1;
+  ExportPlainXml("</Packages>",level);
+  */
+  if iVAZBr.WeightExpFlag == 1 then begin
+    ExportPlainXml("<Weight>",level);
+    level = level + 1;
+    ExportTagXml("GrossWeight",ValToString(GrossWeight,M45Val,"",".",0),level);
+    ExportTagXml("NetWeight",ValToString(NetWeight,M45Val,"",".",0),level);
+    ExportTagXml("UnitOfMeasure",iVAZBr.WeightUnit,level);
+    level = level - 1;
+    ExportPlainXml("</Weight>",level);
+  end;
+ // ExportPlainXml("<ClassesAndNumbers>",level);
+ // level = level + 1;
+ // ExportTagXml("ClassAndNumber","2.0",level);
+ // level = level - 1;
+ // ExportPlainXml("</ClassesAndNumbers>",level);
+  
+ // ExportTagXml("Value",ValToString(IVr.Sum1,M423Val,"",".",0),level);
+ // ExportTagXml("Currency",IVr.CurncyCode,level);
+  //ExportTagXml("ComplementaryDeliveryInformation","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</DeliveryData>",level);
+ /*
+  ExportPlainXml("<ComplementaryTransportInformation>",level);
+  level = level + 1;
+   
+  ExportPlainXml("<PaymentForDelivery>",level);
+  level = level + 1;
+ // ExportTagXml("TypeOfTax","2.0",level);
+ // ExportTagXml("PaymentValue","2.0",level);
+ // ExportTagXml("Currency","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</PaymentForDelivery>",level);
+  ExportPlainXml("<Annexes>",level);
+  level = level + 1;
+  ExportPlainXml("<Annex>",level);
+  level = level + 1;
+  //ExportTagXml("TypeOfDocument","2.0",level);
+  //ExportTagXml("DocumentDate","2.0",level);
+  //ExportTagXml("DocumentNumber","2.0",level);
+  level = level - 1;
+  ExportPlainXml("</Annex>",level);
+  level = level - 1;
+  ExportPlainXml("</Annexes>",level);
+      
+  ExportTagXml("OtherInstructions",IVr.InvComment,level);
+  level = level - 1;
+  ExportPlainXml("</ComplementaryTransportInformation>",level);
+*/
+  level = level - 1;
+  ExportPlainXml("</TransportDocument>",level);
+  level = level - 1;
+  ExportPlainXml("</TransportDocuments>",level);
+  ExportPlainXml("</iVAZFile>",0); 
+  end;
+  
+  skipf:;
+return;
+end;
+
+
+global
+procedure iVAZORDsm()
+begin
+  record SHVc ORr;
+  record RcVc RepSpec;
+  Integer wn,nwn;
+  string 60 aa;
+
+  wn = CurWindow;
+  GetWindowRecord(wn,ORr);
+  RepSpec.f1 = ORr.SerNr;
+  RepSpec.Media = 2;
+  RepSpec.RsMode = 0;
+  RepSpec.repname = "iVAZSHExport";
+  nwn = OpenWindow("iVAZSHECLass",1,0,"","",RepSpec); 
+  return;
+end;

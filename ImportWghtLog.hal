@@ -1,0 +1,210 @@
+procedure CleanArray(var array string larr,var integer cnt)
+begin
+  integer i;
+
+  for (i=0;i<cnt+1;i=i+1) begin
+    larr[i] = "";
+  end;
+  cnt = 0;
+  return;
+end;
+
+global
+updating procedure AddNewWeightLog(array string larr)
+begin
+  record WeightLogVc WeightLogr;
+
+  RecordNew(WeightLogr);
+  WeightLogr.TimeStamp = larr[0];
+  WeightLogr.Type = StringToInt(larr[1]);
+  WeightLogr.EkspeditionsNr = StringToLongInt(larr[2]);
+  WeightLogr.AnnulleretAf = StringToInt(larr[3]);
+  WeightLogr.VaegtNr = larr[4];
+  WeightLogr.VejningsMetode = StringToInt(larr[5]);
+  WeightLogr.FaktureretStatus = StringToInt(larr[6]);
+  WeightLogr.AnnulleretStatus = StringToInt(larr[7]);
+  WeightLogr.FoersteVejning = StringToVal(larr[8],M4Val);
+  WeightLogr.DatoFoerste = larr[9];
+  WeightLogr.AndenVejning = StringToVal(larr[10],M4Val);
+  WeightLogr.Netto = StringToVal(larr[11],M4Val);
+  WeightLogr.DatoAnden = larr[12];
+  WeightLogr.Oprettet = larr[13];
+  WeightLogr.Opdateret = larr[14];
+  WeightLogr.BilNr = StringToLongInt(larr[15]);
+  WeightLogr.BilNavn = larr[16];
+  WeightLogr.RegistreringsNr = larr[17];
+  WeightLogr.OrdreNr = StringToLongInt(larr[18]);
+  WeightLogr.OrdreNavn = larr[19];
+  WeightLogr.OrdreLinieNr = StringToLongInt(larr[20]);
+  WeightLogr.OrdreLinieNavn = larr[21];
+  WeightLogr.ModtagerNr = StringToLongInt(larr[22]);
+  WeightLogr.ModtagerNavn = larr[23];
+  WeightLogr.BetalerNr = StringToLongInt(larr[24]);
+  WeightLogr.BetalerNavn = larr[25];
+  WeightLogr.LeverandoerNr = StringToLongInt(larr[26]);
+  WeightLogr.LeverandoerNavn = larr[27];
+  WeightLogr.VognmandsNr = StringToLongInt(larr[28]);
+  WeightLogr.VognmandsNavn = larr[29];
+  WeightLogr.ContainerNr = StringToLongInt(larr[30]);
+  WeightLogr.ContainerNavn = larr[31];
+  WeightLogr.KommuneNr = StringToLongInt(larr[32]);
+  WeightLogr.KommuneNavn = larr[33];
+  WeightLogr.AfhentPladsNr = StringToLongInt(larr[34]);
+  WeightLogr.AfhentPladsNavn = larr[35];
+  WeightLogr.LevPladsNr = StringToLongInt(larr[36]);
+  WeightLogr.LevPladsNavn = larr[37];
+  WeightLogr.VareNr = StringToLongInt(larr[38]);
+  WeightLogr.VareNavn = larr[39];
+  WeightLogr.KoerselsNr = StringToLongInt(larr[40]);
+  WeightLogr.Varepris = StringToVal(larr[41],M4Val);
+  WeightLogr.Afgift1Nr = StringToLongInt(larr[42]);
+  WeightLogr.Afgift1Navn = larr[43];
+  WeightLogr.Afgift1Pris = StringToVal(larr[44],M4Val);
+  WeightLogr.Afgift2Nr = StringToLongInt(larr[45]);
+  WeightLogr.Afgift2Navn = larr[46];
+  WeightLogr.Afgift2Pris = StringToVal(larr[47],M4Val);
+  WeightLogr.Afgift3Nr = StringToLongInt(larr[48]);
+  WeightLogr.Afgift3Navn = larr[49];
+  WeightLogr.Afgift3Pris = StringToVal(larr[50],M4Val);
+  WeightLogr.AfgifterIAlt = larr[51];
+  WeightLogr.Gebyr = larr[52];
+  WeightLogr.GebyrNr = StringToLongInt(larr[53]);
+  WeightLogr.GebyrNavn = larr[54];
+  WeightLogr.Momssats = StringToVal(larr[55],M4Val);
+  WeightLogr.PrisUdenMoms = StringToVal(larr[56],M4Val);
+  WeightLogr.Moms = StringToVal(larr[57],M4Val);
+  WeightLogr.PrisIAlt = StringToVal(larr[58],M4Val);
+  WeightLogr.Bemaerkning1 = larr[59];
+  WeightLogr.Bemaerkning2 = larr[60];
+  WeightLogr.ManuelVej1 = larr[61];
+  WeightLogr.ManuelVej2 = larr[62];
+  WeightLogr.AntalDelvejninger = StringToLongInt(larr[63]);
+  WeightLogr.FaktureringsType = StringToInt(larr[64]);
+  WeightLogr.Reference = larr[65];
+  WeightLogr.LoginBruger = larr[66];
+  WeightLogr.EnhedsPris = StringToVal(larr[67],M4Val);
+  WeightLogr.MinPris = StringToVal(larr[68],M4Val);
+  WeightLogr.MaxPris = StringToVal(larr[69],M4Val);
+  WeightLogr.Fradrag = StringToVal(larr[70],M4Val);
+  WeightLogr.FradragNr = StringToLongInt(larr[71]);
+  WeightLogr.FradragNavn = larr[72];
+  WeightLogr.KoerselsNr2 = StringToLongInt(larr[73]);
+  WeightLogr.EfterBeh = StringToLongInt(larr[74]);
+  WeightLogr.Exporteret = StringToLongInt(larr[75]);
+  WeightLogr.SpecielPris = StringToVal(larr[76],M4Val);
+  WeightLogr.OrdreFraktionNr = StringToLongInt(larr[77]);
+  WeightLogr.OrdreFraktionNavn = larr[78];
+  RecordStore(WeightLogr,true);
+  return;
+end;
+
+function boolean TestRecordExist(string TimeStamp)
+begin
+  record WeightLogVc WeightLogr;
+  boolean res;
+
+  res = false;
+  WeightLogr.TimeStamp = TimeStamp;
+  if (ReadFirstMain(WeightLogr,1,true)) then begin
+    res = true;
+  end;
+  TestRecordExist = res;
+  return;
+end;
+
+function boolean TestTimeStampLen(string TimeStamp)
+begin
+  boolean res;
+
+  res = true;
+  if (Len(TimeStamp) != 21) then begin
+    res = false;
+  end;
+  TestTimeStampLen = res;
+  return;
+end;
+
+function boolean TestTypeLen(string Type)
+begin
+  boolean res;
+
+  res = true;
+  if (Len(Type) > 2) then begin
+    res = false;
+  end;
+  TestTypeLen = res;
+  return;
+end;
+
+updating procedure DoImportWghtLog(var longint NewRecCnt)
+begin
+  array string 255 larr;
+  string 1 ch;
+  longint pos;
+  integer lfdnum;
+  boolean testf;
+  boolean out;
+
+  NewRecCnt = 0;
+  pos = 0;
+  lfdnum = 0;
+  if (!TestEOF) then begin
+    testf = true;
+    while (testf) begin
+      ch = ReadChar(pos);
+      pos = pos + 1;
+      if (Asc(ch) == 13)or(Asc(ch) == 10)or(Asc(ch) == 11) then begin
+        if (lfdnum != 0) then begin
+          AddNewWeightLog(larr);
+          NewRecCnt = NewRecCnt + 1;
+          CleanArray(larr,lfdnum);
+        end;
+      end else begin
+        if (ch == ";") then begin
+          out = false;
+          if (lfdnum == 0) then begin
+            if (!TestTimeStampLen(larr[lfdnum])) then begin
+              out = true;
+            end;
+          end else begin
+            if (lfdnum == 1) then begin
+              if (!TestTypeLen(larr[lfdnum])) then begin
+                out = true;
+              end else begin
+                if (TestRecordExist(larr[0])) then begin
+                  out = true;
+                end;
+              end;
+            end;
+          end;
+          if (!out) then begin
+            lfdnum = lfdnum + 1;
+          end else begin
+            NextImportLine(true);
+            CleanArray(larr,lfdnum);
+            lfdnum = 0;
+          end;
+        end else begin
+          larr[lfdnum] = larr[lfdnum] & ch;
+        end;
+      end;
+      if (TestEOF) then begin testf = false; end;
+    end;
+  end;
+  if (lfdnum != 0) then begin
+    AddNewWeightLog(larr);
+    NewRecCnt = NewRecCnt + 1;
+  end;
+  return;
+end;
+
+global
+updating procedure ImportWghtLogIn(record RcVc RepSpec)
+begin
+  longint NewRecCnt;
+
+  DoImportWghtLog(NewRecCnt);
+  MessageBox(0,"Created " & NewRecCnt & " new records");
+  return;
+end;
+

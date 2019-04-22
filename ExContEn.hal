@@ -1,0 +1,108 @@
+event startup
+begin
+
+  SetLangMode(LangLithuanian,"LIT",0);
+
+  Export("Kontaktai",ExContEClass,ExContEn,modSL);
+
+
+  return;
+end;
+
+event DefineWindows
+begin
+  real x,h,h1,hl,h2,h3,h4,h5,h6,h7,hs,v,v2,vm,l,vs,f,t;
+
+  SetLangMode(LangLithuanian,"LIT",0);
+
+  WindowBegin("Kontaktai",ExContEClass,CGEcW,RcType);
+  SetWRect(20,80,450,298);
+
+  EndWindow;
+  return;
+end;
+
+function integer strlen(string str)
+begin
+  integer sk,l,i;
+  sk = len(str);
+  l = len(str);
+  for (i=0;i<=l;i=i+1) begin
+  //messagebox(0,Mid(str,i,1)&" "&);
+    if ((Mid(str,i,1)=="ä") or (Mid(str,i,1)=="ì") or (Mid(str,i,1)=="˜") or (Mid(str,i,1)=="°") or (Mid(str,i,1)=="ˆ") or (Mid(str,i,1)=="ð") or (Mid(str,i,1)=="‹") or (Mid(str,i,1)=="«") or (Mid(str,i,1)=="÷") or
+	(Mid(str,i,1)==UpperCase("ä")) or (Mid(str,i,1)==UpperCase("ì")) or (Mid(str,i,1)==UpperCase("˜")) or (Mid(str,i,1)==UpperCase("°")) or (Mid(str,i,1)==UpperCase("ˆ")) or (Mid(str,i,1)==UpperCase("ð")) or (Mid(str,i,1)==UpperCase("‹")) or (Mid(str,i,1)==UpperCase("«")) or (Mid(str,i,1)==UpperCase("÷")))then begin
+      sk=sk+1;
+    end;
+  end;
+  strlen = sk;
+  return;
+end;
+
+
+global
+procedure ExContEn(record RcVc RepSpec)
+begin
+  record CUVc CUr;
+  String 60 fr,to,tstr;
+  Boolean found,testf,cufound;
+  integer i;
+//	if (SetExportCodepage("1257")) then begin
+//	end;
+//  if (SetExportCodePage("UTF-8") == false) then begin end;
+
+  found = true;
+
+  CUr.Code = " ";
+
+  while (LoopMain(CUr,1,found)) begin
+//LogText(0,"CUr " & CUr.Code);
+    testf = true;
+    if (CUr.blockedFlag<>0) then begin testf = false; end;
+    
+    if (found==false) then begin
+      testf = false;
+    end;
+    if(testf) then begin
+	      ExportPadString("ADR",3,"",false);//1
+              ExportPadString(";",1,"",false); // 
+	      ExportPadString(CUr.Code,strlen(CUr.Code),"",false);//2
+              ExportPadString(";",1," ",false); // 
+              ExportPadString(";",1," ",false); // 
+              ExportPadString(";",1," ",false); // 
+	      ExportPadString(CUr.Name,strlen(CUr.Name),"",false);//5
+              ExportPadString(";",1," ",false); // 
+	     tstr = CUr.InvAddr0;
+	     if ((nonblank(tstr)) and (nonblank(CUr.InvAddr1))) then begin
+	       tstr = tstr & "," & CUr.InvAddr1;
+	       end else begin
+	       tstr = tstr & CUr.InvAddr1;
+	     end;
+	     if ((nonblank(tstr)) and (nonblank(CUr.InvAddr2))) then begin
+	       tstr = tstr & "," & CUr.InvAddr2;
+	     end else begin
+	       tstr = tstr & CUr.InvAddr2;
+	     end;
+	      ExportPadString(tstr,strlen(tstr),"",false);//6 
+              ExportPadString(";",1," ",false); // 
+	      ExportPadString(CUr.InvAddr4,strlen(CUr.InvAddr4),"",false);//7 turi buti pasto kodas???
+              ExportPadString(";",1," ",false); // 
+              ExportPadString(";",1," ",false); // 
+              ExportPadString(";",1," ",false); // 
+	      ExportPadString(CUr.CountryCode,strlen(CUr.CountryCode),"",false);//10
+              ExportPadString(";",1," ",false); // 
+	      for (i=0;i<27;i=i+1) begin
+	       ExportPadString(";",1,"",false); // 
+              end; // for
+//	       ExportPadString("last;",1,"",false); // 
+	      ExportPadString(chr(13) & chr(10),2,"",false);  
+//      NewLine;
+    end; /* if(testf) */
+  end; /* LoopMain */
+  return;
+
+  EndJob;
+
+end;
+    
+    
+    

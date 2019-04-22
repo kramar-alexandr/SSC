@@ -1,0 +1,197 @@
+external inner function roundmode SetRoundModeD(Integer);
+external inner function Boolean IVVc_PasteQuantity(var record IVVc,Integer);
+
+global
+updating procedure EmptyTruck()
+begin
+	integer wn,nwn;
+	record IVVc IVr,oldIVr;
+	record TruckWBlock TWbr;
+	val importval;
+	boolean testf;
+	string 255 filename;
+	
+	BlockLoad(TWbr);
+	if blank(TWbr.ProgramPath) or FileExists(TWbr.ProgramPath) == false then begin
+		MessageBox(99997,"");
+		goto skipf;
+	end;
+	//trace(TWbr.FilePath,TWbr.FilePath);
+	if blank(TWbr.FilePath) or FileExists(TWbr.FilePath) == false then begin
+		//MessageBox(99995,"");
+		//goto skipf;
+	end;
+  wn = CurWindow;
+  DeselectWindow(wn,true);
+  GetWindowRecord(wn,IVr);
+	if WindowState(wn)==0 then begin
+		if IVr.OKFlag==0 then begin
+			RunProgram(TWbr.ProgramPath,TWbr.Command);
+			if TWbr.Delay > 0 then begin
+				MilliSleep(TWbr.Delay);
+			end;
+			if FileExists(TWbr.FilePath & TWbr.FileName) then begin
+                        Delete_File(TWbr.FilePath & TWbr.EmptyName);//delete incase it was there from previous session
+				OpenFile(TWbr.FilePath & TWbr.FileName);
+				importval = Round(StringToVal(ImportField,M4Val),SetRoundModeD(2)); 
+				CloseFile;
+				recordcopy(oldIVr,IVr);
+				IVr.EmptyTruckW = importval/1000;
+				PutWindowRecord(wn,IVr);
+				RecordUpdate(oldIVr,IVr,true);
+				
+				RenameFile(TWbr.FilePath & TWbr.FileName,TWbr.FilePath & TWbr.EmptyName);
+				RecordLinkFile(TWbr.FilePath & TWbr.EmptyName,0,IVr,CurrentCompany);
+				Delete_File(TWbr.FilePath & TWbr.EmptyName);
+				//RenameFile(TWbr.FilePath & TWbr.EmptyName,TWbr.FilePath & TWbr.FileName);
+				CloseWindow(wn);
+				nwn = OpenWindow("IVDClass",1,0,"","",IVr); 
+			end else begin
+				MessageBox(99994,"");
+			end;
+		end else begin
+			MessageBox(99999,"");
+		end;
+	end else begin
+		MessageBox(99998,"");
+	end;
+	skipf:;
+return;
+end;
+
+global
+updating procedure FullTruck()
+begin
+	integer wn,rw,i,nwn;
+	record IVVc IVr,oldIVr;
+	row IVVc IVrw;
+	record TruckWBlock TWbr;
+	val importval;
+	boolean testf,FoundRow;
+	string 255 filename;
+	
+	BlockLoad(TWbr);
+	if blank(TWbr.ProgramPath) or FileExists(TWbr.ProgramPath) == false then begin
+		MessageBox(99997,"");
+		goto skipf;
+	end;
+	if blank(TWbr.FilePath) or FileExists(TWbr.FilePath) == false then begin
+		//MessageBox(99995,"");
+		//goto skipf;
+	end;
+  wn = CurWindow;
+  DeselectWindow(wn,true);
+  GetWindowRecord(wn,IVr);
+	if WindowState(wn)==0 then begin
+		if IVr.OKFlag==0 then begin
+			RunProgram(TWbr.ProgramPath,TWbr.Command);
+			if TWbr.Delay > 0 then begin
+				MilliSleep(TWbr.Delay);
+			end;
+			if FileExists(TWbr.FilePath & TWbr.FileName) then begin
+				Delete_File(TWbr.FilePath & TWbr.FullName);//delete incase it was there from previous session
+				OpenFile(TWbr.FilePath & TWbr.FileName);
+				importval = Round(StringToVal(ImportField,M4Val),SetRoundModeD(2)); 
+				CloseFile;			
+				RecordCopy(oldIVr,IVr);
+				IVr.FullTruckW = importval/1000;
+				rw = MatRowCnt(IVr);
+				FoundRow = false;
+				for(i=rw-1;i>=0;i=i-1)begin
+					MatRowGet(IVr,i,IVrw);
+					if nonblank(IVrw.ArtCode) and IVrw.Quant==0 then begin
+						IVrw.Quant = IVr.FullTruckW - IVr.EmptyTruckW;
+						MatRowPut(IVr,i,IVrw);
+						IVVc_PasteQuantity(IVr,i);
+						i = -1;
+						FoundRow = true;
+					end;
+				end;
+				if FoundRow then begin
+				end else begin
+					MessageBox(99993,"");
+				end;
+				PutWindowRecord(wn,IVr);
+				RecordUpdate(oldIVr,IVr,true);
+				RenameFile(TWbr.FilePath & TWbr.FileName,TWbr.FilePath & TWbr.FullName);
+				RecordLinkFile(TWbr.FilePath & TWbr.FullName,0,IVr,CurrentCompany);
+				Delete_File(TWbr.FilePath & TWbr.FullName);
+				CloseWindow(wn);
+				nwn = OpenWindow("IVDClass",1,0,"","",IVr); 
+			end else begin
+				MessageBox(99994,"");
+			end;
+		end else begin
+			MessageBox(99999,"");
+		end;
+	end else begin
+		MessageBox(99998,"");
+	end;
+	skipf:;
+return;
+end;
+
+function val GetWghtCoef()
+begin
+	record TruckWBlock TWbr;
+  val res;
+  
+  BlockLoad(TWbr);
+  res = 1;
+  if (nonblank(TWbr.WghtCoef))and(TWbr.WghtCoef != 0) then begin
+    res = TWbr.WghtCoef;
+  end;
+  GetWghtCoef = res;
+  return;
+end;
+
+global
+procedure FillWeights()
+begin
+  record WeightLogVc WeightLogr;
+  record IVVc IVr;
+  row IVVc IVrw;
+  val WghtCoef;
+  integer i,rwcnt;
+  integer wn;
+  boolean lLoop;
+
+  wn = CurWindow;
+  DeselectWindow(wn,true);
+  GetWindowRecord(wn,IVr);
+	if (IVr.OKFlag == 0) then begin
+    if (nonblank(IVr.EkspNr)) then begin
+      lLoop = true;
+      WeightLogr.EkspeditionsNr = IVr.EkspNr;
+      while (LoopBackKey("EkspeditionsNr",WeightLogr,1,lLoop)) begin
+        if (WeightLogr.EkspeditionsNr != IVr.EkspNr) then begin
+          lLoop = false;
+        end else begin
+          if (nonblank(WeightLogr.Netto))and(WeightLogr.Netto != 0) then begin
+            if (nonblank(WeightLogr.AndenVejning))and(WeightLogr.AndenVejning != 0) then begin
+              if (nonblank(WeightLogr.FoersteVejning))and(WeightLogr.FoersteVejning != 0) then begin
+                WghtCoef = GetWghtCoef;
+                IVr.EmptyTruckW = WeightLogr.FoersteVejning / WghtCoef;
+                IVr.FullTruckW = WeightLogr.AndenVejning / WghtCoef;
+                rwcnt = MatRowCnt(IVr);
+				        for(i=rwcnt-1;i>=0;i=i-1)begin
+                  MatRowGet(IVr,i,IVrw);
+                  if (nonblank(IVrw.ArtCode))and(IVrw.Quant == 0) then begin
+						        IVrw.Quant = IVr.FullTruckW - IVr.EmptyTruckW;
+						        MatRowPut(IVr,i,IVrw);
+						        IVVc_PasteQuantity(IVr,i);
+						        i = -1;
+                  end;
+                end;
+                PutWindowRecord(wn,IVr);
+              end;
+            end;
+          end;
+        end;
+      end;
+    end;
+	end else begin
+		MessageBox(99999,"");
+	end;
+  return;
+end;

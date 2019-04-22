@@ -1,0 +1,60 @@
+global
+function Boolean IVDClassOfficialSerNrEFAfter(Integer wn,Integer changed)
+BEGIN
+  Boolean res;
+  record IVVc IVr;
+  record IVVc IV2r;
+  row IVVc IVrw;
+  
+	GetPrevWindowRecord(wn,IVr);
+	GetWindowRecord(wn,IV2r);
+	if blank(IVr.OfficialSerNr) then begin
+	end else begin
+		if UserCanAction("OfficialNoChange",false) then begin
+			IV2r.OfficialSerNr = IVr.OfficialSerNr;
+			PutWindowRecord(wn,IV2r);
+		end;
+	end;
+
+  IVDClassOfficialSerNrEFAfter = res;
+  RETURN;
+END;
+
+global
+function Boolean IVDClassDelAddr4EFAfter(Integer wn,Integer changed)
+BEGIN
+  Boolean res;
+  record IVVc IVr;
+  record IVVc IV2r;
+  row IVVc IVrw;
+  
+	GetPrevWindowRecord(wn,IVr);
+	GetWindowRecord(wn,IV2r);
+	if blank(IVr.DelAddr4) then begin
+	end else begin
+		if UserCanAction("OfficialNoChange",false) then begin
+			IV2r.DelAddr4 = IVr.DelAddr4;
+			PutWindowRecord(wn,IV2r);
+		end;
+	end;
+
+  IVDClassDelAddr4EFAfter = res;
+  RETURN;
+END;
+
+global
+function Boolean IVDClassAfterEditField(Integer wn,string fieldname,Integer fn, Integer rownr,Integer changed)
+BEGIN
+  Boolean res;
+  
+  res = inner.IVDClassAfterEditField(wn,fieldname,fn,rownr,changed);
+  
+  switch (fieldname) begin
+    case "OfficialSerNr": res = IVDClassOfficialSerNrEFAfter(wn,changed);
+    case "DelAddr4" : res = IVDClassDelAddr4EFAfter(wn,changed);
+  end;
+  IVDClassAfterEditField = res;
+return;
+end;
+
+

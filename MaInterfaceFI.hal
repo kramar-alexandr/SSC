@@ -1,0 +1,53 @@
+
+event DefineWindows
+begin
+  real h,h1,h2,hs,v,vm,vs,f;
+  SetLangMode(LangLithuanian,"LIT",0);
+  
+  
+  WindowBegin("Comet upload",ComUpLoadDClass,CGview,-);
+  SetWRect(64,80,600,450);
+  Sizeable(-1,-1,0,0);
+  UseView(ComUpLoadVc);
+  BrowseButtons(false);
+  Sizeable(150,150,0,0);
+  EditField(h=80,v=6,-250,"Name",Normal,CometUpload,false,0);
+  MatrixBegin(3,v+=40,-50,-20,-,299);
+  Flip(0);
+  MatCol(1,50,"Row code",0,RowCode,false,0);
+  MatCol(1,100,"Column code",0,ColCode,false,0);
+  Flip(1);
+  MatCol(1,280,"C_omment",0,Comment,false,0);
+  EndMatrix;
+  vs = 20;
+  VTab(-35,v,-16,v+vs,ToolFlip,1,"A");
+  EndWindow;
+
+  WindowBegin("Comet upload",ComUpLoadLClass,CGmlist,-);
+  SpawnClass(ComUpLoadDClass);
+  SetWRect(64,80,509,298);
+  Sizeable(-1,-1,0,0);
+  UseView(ComUpLoadVc);
+  RecordList(4,17,-21,-39);
+  RlColKey(4,4,"Comet Upload file",CometUpload,false,CometUpload);
+  SearchField("Otsi");
+  EndWindow;
+  
+  WindowBegin("Specify Comet upload",MaKeyRClass,CGRcW,RcType);
+  SetWRect(20,80,509,250);
+  PeriodField(h=130,v=6,"Period");
+  EditFieldTL(h,v+=20,250,"Object",M4UStr,Normal,60 ,ObjStr,false,ObjSClass);
+  EditFieldTL(h,v+=20,190,"Keys",M4UStr,Normal,60 ,f3,false,0);
+  EditFieldTL(h,v+=20,190,"Header",M4Str,Normal,60 ,f1,false,0);
+  EditFieldTL(h,v+=20,190,"Name",M4Str,Normal,60 ,f4,false,0);
+  EditFieldTL(h,v+=20,50,"Display Values in",M4Str,Normal,5 ,AccStr,false,CurncyCodeSClass);
+  StaticText(h+60,v+12,"with Exchange Rate of Last day in Period",false);
+  CheckBox(h,v+=30,0,"Including _Simulations",SimVerf);
+  CheckBox(h,v+=16,0,"No Header",flags[5]);
+  ButtonFrame(h,v+=40,123,2,"Display Values in");
+  RadioButton(h,v,0,0,"Base Currency 1",basecurncy);
+  RadioButton(h,v+=16,1,0,"Base Currency 2",basecurncy);
+  EndWindow;
+    
+  return;
+end;

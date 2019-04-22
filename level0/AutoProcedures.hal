@@ -1,0 +1,9 @@
+external outer updating procedure VIImportIn();
+external outer updating procedure IVImportIn();
+
+global
+updating procedure AutoProcedures()
+begin
+  VIImportIn;
+  IVImportIn;
+end;

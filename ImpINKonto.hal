@@ -1,0 +1,1045 @@
+external inner procedure PUSumUp(var record PUVc);
+external inner procedure GetFullCurncyRate (var string,Date,var val,var val,var val,var val,var val);
+external inner procedure CalcExtra(val,string,var val);
+external inner procedure CalcSum(val,val,val,val,var val,Integer);
+external inner procedure CalcSum2(val,val,val,val,var val,Integer);
+external inner procedure PUCalcCostPrice(string,val,Integer,Integer,string,string,
+                                   val,val,val,val,val,
+                                   val,val,val,val,val,val,
+                                   string,var val,val,var val,string,Integer);
+
+external inner procedure FindPUStockAcc(string,record CostAccBlock,string,string,string,record INVc,Integer,var string,var string,Boolean);
+external inner procedure IVSumup(var record IVVc,Boolean);
+external inner procedure PastePDInInv(var record IVVc,string,Boolean);
+external inner procedure GetItemSalesAcc(string,Integer,var string);
+
+procedure SetDecimalChar(var string res)
+BEGIN
+  record SysFormatBlock SysFormatRec;
+  Integer i;
+  string 255 tstr;
+  string 1 ch;
+
+  tstr = res;
+  BlockLoad(SysFormatRec);
+  for (i=len(tstr);i>=1;i=i-1) begin
+    ch = Mid(tstr,i,1);
+    if (ch==".") then begin 
+//      res = Left(res,(i-1));
+      res = Left(res,(i));
+      res = res & SysFormatRec.decimalPt; ;
+      tstr = Right(tstr,(len(tstr)-(i+1)));
+      res = res & tstr;        
+      goto LSetDecimalChar;
+    end;
+  end;
+LSetDecimalChar:;
+  RETURN;
+END;
+
+////////
+/*
+
+global
+updating function Integer PasteKontoInIV(record IVVc IVp,String cucode,String ponr,String loc,Date opdate,Integer maxrows)
+BEGIN
+  Integer res;
+  record MainStockBlock MainStockRec;
+  record CostAccBlock CostAccRec;
+//  record INVc INr;
+  record CUVc CUr;
+  row IVVc IVrw;
+  Integer i,rwcnt,nrwcnt;
+  val t1,remn,p,totqty,v2,t,v1;
+  string 255 extra;
+  val fr,to1,to2,br1,br2;
+  val pv,sv;
+  string 60 sz,msk,mskrep;  
+  string 200 varsubset;
+  string 255 tstr;
+  string 20 stockacc,purchacc,curcode;
+  Boolean testf;
+  
+  res = -1;
+  BlockLoad(MainStockRec);
+  BlockLoad(CostAccRec);
+
+  if nonblank(opdate) then begin
+  IVp.InvDate = opdate;
+  end else begin
+  IVp.InvDate = CurrentDate;
+  end;// if
+  IVp.TransDate = IVp.InvDate;
+
+//  PUp.TransDate = opdate;
+	CUr.Code = cucode;
+                if (readFirstMain(CUr,1,true)) then begin
+                  IVp.CustCode = CUr.Code;
+                  IVp.Addr0 = CUr.Name;
+	      IVp.Addr1 = CUr.InvAddr0;
+	      IVp.Addr2 = CUr.InvAddr1;
+	      IVp.Addr3 = CUr.InvAddr2;
+	      IVp.CustCat = CUr.CustCat;
+//	      IVp.OrgCust = ORp.CustCode;
+	      IVp.PayDeal = CUr.PayDeal;
+      PastePDInInv(IVp,"");
+	      IVp.VATNr = CUr.VATNr;      
+	      IVp.ExportFlag = CUr.ExportFlag;
+	      IVp.FiscalFlag = CUr.FiscalFlag;
+	      IVp.CustVATCode = CUr.VATCode;      
+	      IVp.UpdStockFlag = 0;      
+
+	    curcode = CUr.CurncyCode;
+	    GetFullCurncyRate(curcode,IVp.InvDate,fr,to1,to2,br1,br2);
+	    IVp.CurncyCode = curcode;
+	    IVp.FrRate = fr;
+	    IVp.ToRateB1 = to1;
+	    IVp.ToRateB2 = to2;
+	    IVp.BaseRate1 = br1;
+	    IVp.BaseRate2 = br2;
+		  if nonblank(CUr.LangCode) then begin
+		  IVp.LangCode = CUr.LangCode;
+		  end;// if
+
+		end;
+  if nonblank(loc) then begin
+  IVp.Location = loc;
+  end;// if
+  if nonblank(ponr) then begin
+  IVp.OfficialSerNr = ponr;
+  end;// if
+
+  
+  IVp.InvComment = "likuciai";
+
+////
+    IVp.SerNr = NextSerNr("IVVc",IVp.InvDate,-1,false,"");
+
+////
+
+    IVSumup(IVp,true);
+//LPasteKontoInPU:;
+  PasteKontoInIV = res; 
+  RETURN;
+END;
+
+global
+updating procedure FillIVMatrKonto(var Integer purows,record IVVc IVp,String artcode,val artprice)
+begin
+  Integer res;
+//  record POSettingBlock POSetb;
+  record MainStockBlock MainStockRec;
+  record CostAccBlock CostAccRec;
+  record INVc INr;
+//  record PIVc PIr;
+  row IVVc IVrw;
+//  row POVc POrw;
+  Integer i,rwcnt,cnt;
+  val t1,remn,p,totqty,v2,t,v1;
+  val frrate,torate1,torate2,baserate1,baserate2;
+  string 255 extra;
+//  Boolean DropPOToPULink;
+  val fr,to1,to2,br1,br2;
+  val pv,sv;
+  string 60 sz,msk,mskrep;  
+  string 200 varsubset;
+  string 255 tstr;
+  string 20 stockacc,purchacc;
+  Boolean testf;
+  
+  res = -1;
+
+  BlockLoad(MainStockRec);
+  BlockLoad(CostAccRec);
+
+  totqty = blankval;
+    INr.Code = "LIK";
+    cnt = purows;
+	if (ReadFirstMain(INr,1,true)) then begin
+        end;
+        
+
+      IVrw.VATCode = "0";
+      IVrw.ArtCode = INr.Code;
+
+      IVrw.Price = artprice;
+        IVrw.Quant = 1;
+
+      IVrw.UnitCode = INr.Unittext;
+      IVrw.Spec = INr.Name;
+      GetItemSalesAcc(IVrw.ArtCode,IVp.ExportFlag,tstr);
+      IVrw.SalesAcc = tstr;
+
+      IVrw.Sum = IVrw.Price * IVrw.Quant;
+      res = 0;
+
+      MatRowPut(IVp,cnt,IVrw);     
+      cnt = cnt+1;
+
+      purows = cnt;
+
+    IVSumup(IVp,true);
+  
+
+  return;
+end;
+
+global
+updating procedure ImpAPKontoIn()
+BEGIN
+  string 255 InLine;
+//  record INVc oldINr;
+//  record INVc INr;
+  record CUVc VEr;
+
+  string 255 tstr,t2,pudate,cucode;
+  string 255 INCode,INName,INUnit,loc,INGroup,INPrice,INLik,INDate;
+  record VIVc VIr,oldVIr;
+  row VIVc VIrw;
+  Date opdate,validdate;
+  Boolean testf,TrHs;
+  val artqty,artprice;
+  Integer i,rwcnt,nrwcnt;
+  string 20 ponor,pon,ponr,supcode,artcode,batchnr;
+
+
+   while (TestEOF()==false) begin
+    InCode = ImportField; // tiekejo kodas
+    if (blank(InCode)) then begin
+      goto LSKIP;
+    end;  
+
+     ponr = ImportField; // ofic. ser. nr
+     INDate = ImportField; // fakt. data
+     tstr = ImportField; // nereikia
+     tstr = ImportField; // nereikia
+     tstr = ImportField; // nereikia
+
+     INPrice = ImportField; // skolos sums LTL!!!
+//    ResetLoop(CUr);
+    CUr.Code = InCode;
+    TrHs = true;
+//    while (LoopMain(CUr,1,TrHs)) begin
+        if ReadFirstMain(CUr,1,true) then begin
+/*            
+    if (CUr.SearchKey<>InCode) then begin
+      goto LSKIPCU;
+    end;
+*/
+/*     cucode = CUr.Code;
+      RecordNew(IVr);
+        opdate = StringToDate(INDate);
+//StopAlert("pries-InPrice = " & InPrice);	
+
+      SetDecimalChar(INPrice);
+//StopAlert("po-InPrice = " & InPrice);	
+
+      artprice = StringToVal(INPrice,M45Val);
+//StopAlert("artprice = " & artprice);	
+
+		nrwcnt = 0;
+		PasteKontoInIV(IVr,cucode,ponr,loc,opdate,199);	
+		FillIVMatrKonto(nrwcnt,IVr,InCode,artprice);
+	    if (RecordStore(IVr,true)) then begin 
+	    end;
+
+LSKIPCU:
+    end; // if ReadFirstMain
+LSKIP:;
+    testf = NextImportLine(true); 
+    
+   end; // while
+
+  RETURN;
+END;
+*/
+/////
+global
+updating procedure ImpITPragmaIn()
+BEGIN
+  string 255 InLine;
+  record AT2UnitVc oldATUnr;
+  record AT2UnitVc ATUnr;
+  string 255 tstr,t2;
+  string 255 INCode,INName,INUnit,loc,INGroup,INPrice,INLik,INDate;
+  val t10;
+  Boolean testf;
+
+
+   while (TestEOF()==false) begin
+    RecordNew(ATUnr);
+    InCode = ImportField; // inv. Nr
+    if (blank(InCode)) then begin
+      goto LSKIP;
+    end;  
+
+    ATUnr.InventoryNr = InCode;
+    if (ReadFirstMain(ATUnr,1,true)==false) and (nonblank(INCode)) then begin
+      RecordNew(ATUnr);
+      ATUnr.InventoryNr = InCode; // inv. Nr
+
+     ATUnr.Description = ImportField; // pavadinimas
+
+     tstr = ImportField; // nereikia
+
+     INPrice = ImportField; // isigijimo savik.
+  t10 = StringToVal(StripNonDigits(INPrice),M4Val);
+      ATUnr.PurchVal = t10/100;
+
+/*
+      SetDecimalChar(INPrice);
+      ATUnr.PurchVal = StringToVal(INPrice,M45Val);
+*/
+//     ATUnr.PurchVal = ImportField; // isigijimo savik.
+
+     tstr = ImportField; // prad. savik. ???
+     tstr = ImportField; // nereikia - sask. debetas
+     tstr = ImportField; // lik. verte
+     ATUnr.ResVal = StringToVal(tstr,M45Val); // lik. verte 
+     tstr = ImportField; // nereikia - nusidev.
+     tstr = ImportField; // nereikia - lik. verte pab.
+     tstr = ImportField; // nereikia - nusid. debetas
+     tstr = ImportField; // nereikia - nusid. credit
+
+     INPrice = ImportField; // ivedimo i eksploat. data
+//      SetDecimalChar(INPrice);
+      ATUnr.StartingDate1 = StringToDate(INPrice);
+      ATUnr.UsedFromDate = StringToDate(INPrice);
+
+     ATUnr.AT2Code = ImportField; // grupe/kateg.
+     ATUnr.RespPerson = ImportField; // atsak. asm.
+     ATUnr.DepCode = ImportField; // padalinys/skyrius
+     tstr = ImportField; // nereikia - kieno remontas????
+     ATUnr.Comment = ImportField; // pastaba/koment.
+     tstr = ImportField; // nereikia - ????
+     tstr = ImportField; // nereikia - ????
+     tstr = ImportField; // nereikia - ????
+     tstr = ImportField; // nereikia - ????
+     tstr = ImportField; // nereikia - ????
+     ATUnr.VEName = ImportField; // is kur gauta/tiekejas
+     INPrice = ImportField; // isigijimo data
+     ATUnr.PurchaseDate = StringToDate(INPrice);
+
+//     ATUnr.PurchaseDate = ImportField; // isigijimo data
+
+
+      if (RecordStore(ATUnr,false)) then begin
+      end;
+
+    end; // if INr
+    UserTrace(ATUnr.InventoryNr,M4Str);
+LSKIP:;
+    testf = NextImportLine(true); 
+
+   end; // while
+
+  RETURN;
+END;
+
+global
+updating procedure ImpVEKontoIn()
+BEGIN
+  string 255 InLine,reg,search,nam,payd,oper,rate;
+  record CUVc CUr;
+  record CUVc oldCUr;
+
+  record CUVc VEr;
+  string 255 tstr,t2,mail,waddr;
+  string 255 VECode,vatnr,phone,addr,bankac;
+  val cred;
+  Boolean testf,foundf;
+
+
+   while (TestEOF()==false) begin
+    RecordNew(VEr);
+    VECode = ImportField;
+    if (blank(VECode)) then begin
+      goto LSKIP;
+    end;  
+
+////////
+//      VEr.Code = VECode; // kodas
+      search = ImportField;// trumpas
+     nam = ImportField; // pavad.
+     tstr = ImportField;// nerodyti
+     tstr = ImportField; // asmenys
+
+     reg = ImportField; // im. reg. kodas
+     payd = ImportField; // mokejimo salygos
+/////
+     InLine = ImportField;// PVM mok. kodas
+////
+     vatnr = InLine;//   
+     tstr = ImportField; // nuolaida
+     phone = ImportField; // tel./fax
+     addr = ImportField; // fakt. adresas
+     bankac = ImportField;         
+     tstr = ImportField; // nuolaida
+     tstr = ImportField; // nuolaida
+     tstr = ImportField; // nuolaida
+     tstr = ImportField; // nuolaida
+     cred = StringToVal(ImportField,M4Val); // kredito lim.
+     tstr = ImportField; // nuolaida
+     tstr = ImportField; // nuolaida
+     oper = ImportField; // banko kodas         
+     tstr = ImportField; // nuolaida
+     tstr = ImportField; // nuolaida
+     tstr = ImportField; // nuolaida
+     tstr = ImportField; // nuolaida
+     tstr = ImportField; // nuolaida
+     tstr = ImportField; // nuolaida
+     tstr = ImportField; // nuolaida
+     mail = ImportField; // mail
+     tstr = ImportField; // nuolaida
+     waddr = ImportField; // mail
+     rate = ImportField; // mail
+
+  foundf = true;
+  CUr.VATNr = vatnr;
+  ResetLoop(CUr);
+
+//StopAlert("vatnr = " & vatnr & "**reg = " & reg & "**VECode = " & VECode);
+  while(LoopKey("VATNr",CUr,1,foundf)) begin
+
+//    if (((CUr.VATNr<>"") or (CUr.RegNr1<>"")) and ((vatnr == CUr.VATNr) or (reg == CUr.RegNr1))) then begin
+    if ((vatnr == CUr.VATNr) or (reg == CUr.RegNr1) or (search == CUr.SearchKey)) then begin
+//StopAlert("CUr.Code = " & CUr.Code & "**CUr.RegNr1 = " & CUr.RegNr1 & "**CUr.VATNr = " & CUr.VATNr);
+
+	      RecordCopy(oldCUr,CUr);  
+	     CUr.VEType = 1;
+	     if ((Left(InLine,2) == "LT") or blank(InLine)) then begin
+	     CUr.VECat = 10; // vietinis
+	     end else begin // if
+	     CUr.VECat = 20; // uzsienio
+	     end; // if
+
+		if (RecordUpdate(oldCUr,CUr,false)==0) then begin	  
+		end; // if
+	      foundf = false;
+      
+//	    goto LSKIP;
+
+    end;
+  end;
+    VEr.Code = VECode;
+//StopAlert("foundf = " & foundf);
+//StopAlert("VEr.Code = " & VEr.Code);
+///////
+    if (ReadFirstMain(VEr,1,true)==false) and (foundf == true) then begin
+
+      RecordNew(VEr);
+      VEr.Code = VECode; // kodas
+//StopAlert("darom!!! VEr.Code = " & VEr.Code);
+
+      VEr.SearchKey = search;// trumpas
+     VEr.Name = nam; // pavad.
+//     tstr = ImportField;// nerodyti
+//     tstr = ImportField; // asmenys
+
+     VEr.RegNr1 = reg; // im. reg. kodas
+     VEr.VEPayDeal = payd; // mokejimo salygos
+/////
+//     InLine = ImportField;// PVM mok. kodas
+     if ((Left(InLine,2) == "LT") or blank(InLine)) then begin
+     VEr.VECat = 10; // vietinis
+     end else begin // if
+     VEr.VECat = 20; // uzsienio
+     end; // if
+
+////
+     VEr.VATNr = InLine;//   
+     VEr.Phone = phone; // tel./fax
+     VEr.InvAddr0 = addr; // fakt. adresas
+     VEr.BankAccount = bankac;         
+     VEr.VECreditLimit = cred; // kredito lim.
+     VEr.AccOperator = oper; // banko kodas         
+     VEr.eMail = mail; // mail
+     VEr.wwwAddr = waddr; // mail
+     VEr.IntRate = StringToVal(rate,M45Val); // mail
+
+     VEr.VEType = 1;
+     VEr.CUType = 0;
+
+      if (RecordStore(VEr,false)) then begin
+      end;
+
+    end; // if IN    UserTrace(VEr.Code,M4Str);
+LSKIP:;
+    testf = NextImportLine(true); 
+
+   end; // while
+
+  RETURN;
+END;
+
+
+////
+global
+updating procedure ImpINKontoIn()
+BEGIN
+  string 255 InLine;
+  record INVc oldINr;
+  record INVc INr;
+  string 255 tstr,t2;
+  string 255 INCode,INName,INUnit,loc,INGroup,INPrice,INLik,INDate;
+
+  Boolean testf;
+
+
+   while (TestEOF()==false) begin
+    RecordNew(INr);
+    InCode = ImportField; // kodas
+    if (blank(InCode)) then begin
+      goto LSKIP;
+    end;  
+
+    INr.Code = InCode;
+    if (ReadFirstMain(INr,1,true)==false) and (nonblank(INCode)) then begin
+      RecordNew(INr);
+      INr.Code = InCode;
+     tstr = ImportField; // vid. Savikaina!!!! 
+
+     INr.Name = ImportField;// pavad.
+     tstr = ImportField; // nereikia - kaina???? 
+     tstr = ImportField; // nereikia - kaina???? 
+     tstr = ImportField; // nereikia - kaina???? 
+     tstr = ImportField; // nereikia - kaina???? 
+     tstr = ImportField; // nereikia - kaina???? 
+     tstr = ImportField; // nereikia - kaina???? 
+     tstr = ImportField; // nereikia - kaina???? 
+     tstr = ImportField; // nereikia - kaina???? 
+     tstr = ImportField; // nereikia - kaina???? 
+     tstr = ImportField; // nereikia - kaina???? 
+     tstr = ImportField; // nereikia - kaina???? 
+     INr.Unittext = ImportField;
+
+     INr.Group = ImportField;
+/*
+     INPrice = ImportField;
+      SetDecimalChar(INPrice);
+      INr.InPrice = StringToVal(INPrice,M4Val);
+
+     INLik = ImportField;
+     INDate = ImportField;
+*/
+      if (RecordStore(INr,false)) then begin
+      end;
+
+    end; // if INr
+    UserTrace(INr.Code,M4Str);
+LSKIP:;
+    testf = NextImportLine(true); 
+
+   end; // while
+
+  RETURN;
+END;
+
+//////
+global
+updating function Integer PasteKontoInPU(record PUVc PUp,String ponr,String loc,Date opdate,Integer maxrows)
+BEGIN
+  Integer res;
+  record MainStockBlock MainStockRec;
+  record CostAccBlock CostAccRec;
+  record INVc INr;
+  record PIVc PIr;
+  row PUVc PUrw;
+  Integer i,rwcnt,nrwcnt;
+  val t1,remn,p,totqty,v2,t,v1;
+  string 255 extra;
+  val fr,to1,to2,br1,br2;
+  val pv,sv;
+  string 60 sz,msk,mskrep;  
+  string 200 varsubset;
+  string 255 tstr;
+  string 20 stockacc,purchacc;
+  Boolean testf;
+  
+  res = -1;
+  BlockLoad(MainStockRec);
+  BlockLoad(CostAccRec);
+
+  if nonblank(opdate) then begin
+  PUp.TransDate = opdate;
+  end else begin
+  PUp.TransDate = CurrentDate;
+  end;// if
+
+  PUp.TransDate = opdate;
+
+  PUp.CurncyCode = "LTL";
+  if nonblank(loc) then begin
+  PUp.Location = loc;
+  end;// if
+  
+  PUp.LangCode = "LIT";
+  PUp.Comment = "likuciai";
+
+    GetFullCurncyRate(PUp.CurncyCode,PUp.TransDate,fr,to1,to2,br1,br2);
+    PUp.FrRate = fr;
+    PUp.ToRateB1 = to1; 
+    PUp.ToRateB2 = to2;
+    PUp.BaseRate1 = br1;
+    PUp.BaseRate2 = br2;
+////
+    PUp.SerNr = NextSerNr("PUVc",PUp.TransDate,-1,false,"");
+
+////
+
+  PUSumUp(PUp);
+LPasteKontoInPU:;
+  PasteKontoInPU = res; 
+  RETURN;
+END;
+
+global
+updating procedure FillPUMatrKonto(var Integer purows,record PUVc PUp,String artcode,val artqty,val artprice,String loc,date validdate,String batchnr)
+begin
+  Integer res;
+  record POSettingBlock POSetb;
+  record MainStockBlock MainStockRec;
+  record CostAccBlock CostAccRec;
+  record INVc INr;
+  record PIVc PIr;
+  row PUVc PUrw;
+  row POVc POrw;
+  Integer i,rwcnt,cnt;
+  val t1,remn,p,totqty,v2,t,v1;
+  val frrate,torate1,torate2,baserate1,baserate2;
+  string 255 extra;
+  Boolean DropPOToPULink;
+  val fr,to1,to2,br1,br2;
+  val pv,sv;
+  string 60 sz,msk,mskrep;  
+  string 200 varsubset;
+  string 255 tstr;
+  string 20 stockacc,purchacc;
+  Boolean testf;
+  
+  res = -1;
+
+  BlockLoad(MainStockRec);
+  BlockLoad(CostAccRec);
+
+  totqty = blankval;
+    INr.Code = artcode;
+    cnt = purows;
+	if (ReadFirstMain(INr,1,true)) then begin
+        end;
+        
+
+      PUrw.VATCode = INr.VATCode;
+      PUrw.ArtCode = artcode;
+
+      PUrw.Coefficient = INr.UnitCoefficient;
+      PUrw.BasePrice = INr.UPrice1;
+      PUrw.UPrice = artprice;
+        PUrw.Quant = artqty;
+        PUrw.BestBefore = batchnr;
+
+      PUrw.UnitCode = INr.Unittext;
+      PUrw.Spec = INr.Name;
+      PUrw.SerialNr = batchnr;
+//StopAlert("PUrw.ArtCode = " &  PUrw.ArtCode & "**PUrw.UPrice = " &  PUrw.UPrice & "**PUrw.Quant = " &  PUrw.Quant);
+
+	PUrw.CostPrice = blankval;
+        PUCalcCostPrice(PUrw.ArtCode,PUrw.UPrice,PUp.InclVAT,PUp.NoTAXonVAT,PUrw.Extra,PUp.CurncyCode,
+                        PUp.FrRate,PUp.ToRateB1,PUp.ToRateB2,PUp.BaseRate1,PUp.BaseRate2,
+                        PUrw.ShipCost,PUrw.RowCost1,PUrw.RowCost2,PUrw.RowCost3,PUrw.RowCost4,PUrw.RowCost5,
+                        PUrw.CustomsCost,pv,PUrw.Quant,sv,PUrw.VATCode,PUp.ExportFlag);
+      PUrw.CostPrice = pv;                                        
+      PUrw.Sum = sv;
+//StopAlert("PUrw.CostPrice = " &  PUrw.CostPrice & "PUrw.Sum = " &  PUrw.Sum  );
+
+      FindPUStockAcc(PUp.VECode,CostAccRec,PUrw.CostAcc,PUrw.CredAcc,PUp.Location,INr,PUrw.StockType,stockacc,purchacc,true);
+      PUrw.CostAcc = stockacc;
+      if (blank(PUrw.CredAcc)) then begin
+        PUrw.CredAcc = purchacc;
+      end;
+      res = 0;
+
+      MatRowPut(PUp,cnt,PUrw);     
+      cnt = cnt+1;
+//StopAlert("ISEINA-cnt = " &  cnt & "**purows = " &  purows);
+
+      purows = cnt;
+
+  PUSumUp(PUp);
+  
+
+  return;
+end;
+////////
+
+global
+updating procedure ImpPUKontoIn()
+BEGIN
+  string 255 InLine;
+  record INVc oldINr;
+  record INVc INr;
+  string 255 tstr,t2,pudate;
+  string 255 INCode,INName,INUnit,loc,INGroup,INPrice,INLik,INDate;
+  record PUVc PUr,oldPUr;
+  row PUVc PUrw;
+  Date opdate,validdate;
+  Boolean testf;
+  val artqty,artprice;
+  Integer i,rwcnt,nrwcnt;
+  string 20 ponor,pon,ponr,supcode,artcode,batchnr;
+
+   pudate = "";
+
+   while (TestEOF()==false) begin
+    InCode = ImportField;
+    if (blank(InCode)) then begin
+      goto LSKIP;
+    end;  
+
+     INName = ImportField;
+
+     loc = ImportField;
+     INGroup = ImportField;
+
+     INUnit = ImportField;
+     INPrice = ImportField;
+     INLik = ImportField;
+     INDate = ImportField;
+//StopAlert("INPrice = " & INPrice & "**INLik =" & INLik & "**InCode =" & InCode);	
+
+    INr.Code = InCode;
+    if (pudate != INDate) then begin
+      pudate = INDate;
+      RecordNew(PUr);
+        opdate = StringToDate(INDate);
+      SetDecimalChar(INPrice);
+      artprice = StringToVal(INPrice,M45Val);
+      SetDecimalChar(INLik);
+	artqty = StringToVal(INLik,M45Val);
+//StopAlert("INPrice = " & INPrice & "**INLik =" & INLik & "**InCode =" & InCode);	
+		nrwcnt = 0;
+		PasteKontoInPU(PUr,ponr,loc,opdate,199);	
+//StopAlert("pirmas-priesnrwcnt = " & nrwcnt & "**PUr.SerNr =" & PUr.SerNr & "**InCode =" & InCode);	
+		FillPUMatrKonto(nrwcnt,PUr,InCode,artqty,artprice,"",validdate,batchnr);
+//StopAlert("pirmas-po-nrwcnt=purows = " & nrwcnt & "**PUr.SerNr =" & PUr.SerNr);	
+	    if (RecordStore(PUr,true)) then begin 
+	    end;
+
+	end else begin
+        RecordCopy(OldPUr,PUr);
+      SetDecimalChar(INPrice);
+      artprice = StringToVal(INPrice,M45Val);
+      SetDecimalChar(INLik);
+	artqty = StringToVal(INLik,M45Val);
+
+//StopAlert("be head-pries-nrwcnt = " & nrwcnt & "**PUr.SerNr =" & PUr.SerNr);	
+//StopAlert("be head-InCode = " & InCode & "**artprice =" & artprice);	
+
+		FillPUMatrKonto(nrwcnt,PUr,InCode,artqty,artprice,"",validdate,batchnr);
+		if (RecordUpdate(oldPUr,PUr,false)==0) then begin	  
+		end; // if
+//	end; // if
+	  UpdateBrowses("PUVc");
+
+
+    end; // if new PU
+    UserTrace(PUr.SerNr,M4Str);
+LSKIP:;
+    testf = NextImportLine(true); 
+
+   end; // while
+
+  RETURN;
+END;
+
+////////
+global
+updating function Integer PasteKontoInIV(record IVVc IVp,String cucode,String ponr,String loc,Date opdate,Integer maxrows)
+BEGIN
+  Integer res;
+  record MainStockBlock MainStockRec;
+  record CostAccBlock CostAccRec;
+//  record INVc INr;
+  record CUVc CUr;
+  row IVVc IVrw;
+  Integer i,rwcnt,nrwcnt;
+  val t1,remn,p,totqty,v2,t,v1;
+  string 255 extra;
+  val fr,to1,to2,br1,br2;
+  val pv,sv;
+  string 60 sz,msk,mskrep;  
+  string 200 varsubset;
+  string 255 tstr;
+  string 20 stockacc,purchacc,curcode;
+  Boolean testf;
+  
+  res = -1;
+  BlockLoad(MainStockRec);
+  BlockLoad(CostAccRec);
+
+  if nonblank(opdate) then begin
+  IVp.InvDate = opdate;
+  end else begin
+  IVp.InvDate = CurrentDate;
+  end;// if
+  IVp.TransDate = IVp.InvDate;
+
+//  PUp.TransDate = opdate;
+	CUr.Code = cucode;
+                if (readFirstMain(CUr,1,true)) then begin
+                  IVp.CustCode = CUr.Code;
+                  IVp.Addr0 = CUr.Name;
+	      IVp.Addr1 = CUr.InvAddr0;
+	      IVp.Addr2 = CUr.InvAddr1;
+	      IVp.Addr3 = CUr.InvAddr2;
+	      IVp.CustCat = CUr.CustCat;
+//	      IVp.OrgCust = ORp.CustCode;
+	      IVp.PayDeal = CUr.PayDeal;
+      PastePDInInv(IVp,"",true);
+	      IVp.VATNr = CUr.VATNr;      
+	      IVp.ExportFlag = CUr.ExportFlag;
+	      IVp.FiscalFlag = CUr.FiscalFlag;
+	      IVp.CustVATCode = CUr.VATCode;      
+	      IVp.UpdStockFlag = 0;      
+
+	    curcode = CUr.CurncyCode;
+	    GetFullCurncyRate(curcode,IVp.InvDate,fr,to1,to2,br1,br2);
+	    IVp.CurncyCode = curcode;
+	    IVp.FrRate = fr;
+	    IVp.ToRateB1 = to1;
+	    IVp.ToRateB2 = to2;
+	    IVp.BaseRate1 = br1;
+	    IVp.BaseRate2 = br2;
+		  if nonblank(CUr.LangCode) then begin
+		  IVp.LangCode = CUr.LangCode;
+		  end;// if
+
+		end;
+  if nonblank(loc) then begin
+  IVp.Location = loc;
+  end;// if
+  if nonblank(ponr) then begin
+  IVp.OfficialSerNr = ponr;
+  end;// if
+
+  
+  IVp.InvComment = "likuciai";
+
+////
+    IVp.SerNr = NextSerNr("IVVc",IVp.InvDate,-1,false,"");
+
+////
+
+    IVSumup(IVp,true);
+//LPasteKontoInPU:;
+  PasteKontoInIV = res; 
+  RETURN;
+END;
+
+global
+updating procedure FillIVMatrKonto(var Integer purows,record IVVc IVp,String artcode,val artprice)
+begin
+  Integer res;
+//  record POSettingBlock POSetb;
+  record MainStockBlock MainStockRec;
+  record CostAccBlock CostAccRec;
+  record INVc INr;
+//  record PIVc PIr;
+  row IVVc IVrw;
+//  row POVc POrw;
+  Integer i,rwcnt,cnt;
+  val t1,remn,p,totqty,v2,t,v1;
+  val frrate,torate1,torate2,baserate1,baserate2;
+  string 255 extra;
+//  Boolean DropPOToPULink;
+  val fr,to1,to2,br1,br2;
+  val pv,sv;
+  string 60 sz,msk,mskrep;  
+  string 200 varsubset;
+  string 255 tstr;
+  string 20 stockacc,purchacc;
+  Boolean testf;
+  
+  res = -1;
+
+  BlockLoad(MainStockRec);
+  BlockLoad(CostAccRec);
+
+  totqty = blankval;
+    INr.Code = "LIK";
+    cnt = purows;
+	if (ReadFirstMain(INr,1,true)) then begin
+        end;
+        
+
+      IVrw.VATCode = "0";
+      IVrw.ArtCode = INr.Code;
+
+      IVrw.Price = artprice;
+        IVrw.Quant = 1;
+
+      IVrw.UnitCode = INr.Unittext;
+      IVrw.Spec = INr.Name;
+      GetItemSalesAcc(IVrw.ArtCode,IVp.ExportFlag,tstr);
+      IVrw.SalesAcc = tstr;
+
+      IVrw.Sum = IVrw.Price * IVrw.Quant;
+      res = 0;
+
+      MatRowPut(IVp,cnt,IVrw);     
+      cnt = cnt+1;
+
+      purows = cnt;
+
+    IVSumup(IVp,true);
+  
+
+  return;
+end;
+
+global
+updating procedure ImpARKontoIn()
+BEGIN
+  string 255 InLine;
+//  record INVc oldINr;
+  record INVc INr;
+  record CUVc CUr;
+
+  string 255 tstr,t2,pudate,cucode;
+  string 255 INCode,INName,INUnit,loc,INGroup,INPrice,INLik,INDate;
+  record IVVc IVr,oldIVr;
+  row IVVc IVrw;
+  Date opdate,validdate;
+  Boolean testf,TrHs;
+  val artqty,artprice;
+  Integer i,rwcnt,nrwcnt;
+  string 20 ponor,pon,ponr,supcode,artcode,batchnr;
+
+
+   while (TestEOF()==false) begin
+    InCode = ImportField; // pirkejo kodas
+    if (blank(InCode)) then begin
+      goto LSKIP;
+    end;  
+
+     ponr = ImportField; // ofic. ser. nr
+     INDate = ImportField; // fakt. data
+     tstr = ImportField; // nereikia
+     tstr = ImportField; // nereikia
+     tstr = ImportField; // nereikia
+
+     INPrice = ImportField; // skolos sums LTL!!!
+//    ResetLoop(CUr);
+    CUr.Code = InCode;
+    TrHs = true;
+//    while (LoopMain(CUr,1,TrHs)) begin
+        if ReadFirstMain(CUr,1,true) then begin
+/*            
+    if (CUr.SearchKey<>InCode) then begin
+      goto LSKIPCU;
+    end;
+*/
+      cucode = CUr.Code;
+      RecordNew(IVr);
+        opdate = StringToDate(INDate);
+//StopAlert("pries-InPrice = " & InPrice);	
+
+      SetDecimalChar(INPrice);
+//StopAlert("po-InPrice = " & InPrice);	
+
+      artprice = StringToVal(INPrice,M45Val);
+//StopAlert("artprice = " & artprice);	
+
+		nrwcnt = 0;
+		PasteKontoInIV(IVr,cucode,ponr,loc,opdate,199);	
+		FillIVMatrKonto(nrwcnt,IVr,InCode,artprice);
+	    if (RecordStore(IVr,true)) then begin 
+	    end;
+
+LSKIPCU:
+    end; // if ReadFirstMain
+LSKIP:;
+    testf = NextImportLine(true); 
+    
+   end; // while
+
+  RETURN;
+END;
+////////// ImpFrCompPragmaIn
+
+procedure SkipSpaceInFR(string aost,var string frcomp)
+BEGIN
+  string 10 tstr,t2;
+  Integer i,j;
+
+  tstr = aost;
+  t2 = "";
+  for (i=0;i<len(tstr);i=i+1) begin
+    if ((Mid(tstr,i,1)!= " ") and (len(t2) < 5)) then begin
+      t2 = t2 & Mid(tstr,i,1);
+    end;  
+  end;
+//StopAlert("aost = " & aost & "**t2 = " & t2);
+  frcomp = t2;
+
+  RETURN;
+END;
+
+global
+updating procedure ImpFrCompPragmaIn()
+BEGIN
+  string 255 InLine;
+  record FreightCompanyVc oldFCr;
+  record FreightCompanyVc FCr;
+  string 255 tstr,t2;
+  string 255 INCode,INName,INMark,INComp,INReg,INAddr,INPriek;
+
+  Boolean testf;
+
+
+   while (TestEOF()==false) begin
+    RecordNew(FCr);
+
+    InCode = ImportField; // kodas - mas. nr
+    if (blank(InCode)) then begin
+      goto LSKIP;
+    end;  
+
+    SkipSpaceInFR(InCode,t2);
+
+    FCr.Code = t2; // InCode - lieka originalas
+    if (ReadFirstMain(FCr,1,true)==false) and (nonblank(INCode)) then begin
+      RecordNew(FCr);
+      FCr.Code = t2;
+     INMark = ImportField; // mas. marke!!!! 
+
+     FCr.Company = ImportField;// firma
+     FCr.CompanyRegNr = ImportField; // reg. nr 
+     FCr.CMRText = ImportField; // adresas
+     FCr.Driver = ImportField; // vairuot.
+     INPriek = ImportField; // priekaba
+     InLine = "Valst.Nr " & InCode;
+     if nonblank(INMark) then begin
+     InLine = InLine & ", marke " & INMark;  
+     end; // if
+
+     if nonblank(INPriek) then begin
+     InLine = InLine & ", priekabos Nr " & INPriek;  
+     end; // if
+     FCr.TruckInfo = InLine;
+     
+      
+      if (RecordStore(FCr,false)) then begin
+      end;
+
+    end; // if INr
+    UserTrace(FCr.Code,M4Str);
+LSKIP:;
+    testf = NextImportLine(true); 
+
+   end; // while
+
+  RETURN;
+END;
+
+

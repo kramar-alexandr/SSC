@@ -1,0 +1,425 @@
+remote inner function Boolean PasteCust2InInv(var record IVVc,record LocalMachineBlock,string,Boolean,var string,var string,var string,var string,var string);
+
+remote inner procedure VICalcVals(var record VIVc);
+external inner procedure VISumup(record VIVc,var val);
+remote inner procedure VIGetRate(var record VIVc);
+remote inner procedure VIVc_PastePayVal(var record VIVc);
+remote inner function Boolean IVVc_PasteArtCode(var record IVVc,Integer,var string,var string,Boolean,var Integer);
+external inner function Boolean IVDchrsum(var record IVVc,Integer);
+remote inner procedure IVSumup(var record IVVc,Boolean);
+external inner procedure IVDchsum(var record IVVc,Integer);
+external inner function Boolean TouchScreenLook();
+
+procedure RemoveCharacterFromString(var string res,string tstr)
+BEGIN
+  string 1 char;
+  string 10 new_char;
+  Integer i, n;
+
+  n = len(tstr);
+  for (i=0;i<n;i=i+1) begin
+    char = Mid(tstr,i,1);
+    switch (char) begin
+      case "/": new_char = ",";
+      otherwise new_char = char;
+    end;
+    res = res & new_char;
+  end;
+  
+  RETURN;
+END;
+
+global updating
+procedure IVImportIn()
+begin
+	record IVVc IVr,oldIVr;
+	row IVVc IVrw;
+	record CUVc CUr;
+	string 20 regnr,vatnr;
+  string 255 warning,VaztNr,inwarning,item,errstr,VECode,VEName,CurncyCode,ItemName,VATCode,InvoiceNo,Object,Account,filename,location,bz,SalesMan,prepstr,invdatewarn,transdatewarn;
+  date InvDate,DueDate;
+  record LocalMachineBlock LMb;
+  val sum,ct,rate,SubTotal,VAT,Total,TotalVAT,RowSumExclVAT,rebate;
+	longint sernr;
+	integer sernrf,rwcnt,rownr;
+	boolean res,serportf;
+	record VIVcImportBlock VIb;
+	boolean testf;
+	record INVc INr;
+	record UserVc Userr;	
+	string 255 tstr;
+		
+	blockload(VIb);
+	testf = true; 
+	filename = FileNameFromFolder(VIb.IVFilePath,"");
+	if FileExists(VIb.IVFilePath & filename) and nonblank(filename) then begin
+		SetCompany(5,false);
+		OpenFile(VIb.IVFilePath & filename);
+		while (testf) begin
+			VEName = "";
+			VEName = ImportField;
+			if nonblank(VEName) then begin
+				RecordNew(IVr);
+				VECode = ImportField;
+				CUr.RegNr1 = VECode;
+				if ReadFirstKey("RegNr1",CUr,1,true) then begin
+					IVr.CustCode = CUr.Code;
+					if (PasteCust2InInv(IVr,LMb,"",false,warning,errstr,prepstr,invdatewarn,transdatewarn)) then begin
+					end else begin
+					IVr.Addr0 = VEName;
+					end;
+				end else begin
+				  IVr.Addr0 = VEName;
+				end;
+				if blank(IVr.PayDeal) then begin
+					IVr.PayDeal = VIb.VIPayDeal;
+				end;
+				IVr.OfficialSerNr = ImportField;
+				IVr.InvDate = StringToDate(ImportField);
+				IVr.TransDate = IVr.InvDate;
+				IVr.SerNr = NextSerNr("IVVc",IVr.InvDate,-1,false,"");
+				IVr.PayDate = StringToDate(ImportField);
+				bz = ImportField;
+				Object = "";
+				RemoveCharacterFromString(Object,ImportField);
+				if nonblank(IVr.Objects) then begin
+					IVr.Objects = IVr.Objects & "," & Object;
+				end else begin
+				  IVr.Objects = Object;
+				end;
+				IVr.Location = ImportField;
+				SubTotal = StringToVal(ImportField,M4Val);
+				VAT = StringToVal(ImportField,M4Val);
+				Total = StringToVal(ImportField,M4Val);
+				Userr.Name = ImportField;
+				if ReadFirstKey("Name",Userr,1,true) then begin
+					IVr.SalesMan = Userr.Code;
+				end;
+				IVr.DelAddr4 = ImportField;
+				rownr = 0;
+				RecordStore(IVr,false);
+			end else begin
+				RecordCopy(oldIVr,IVr);
+				bz = ImportField;
+				item = "";
+				item = ImportField;
+				if nonblank(item) then begin
+					INr.AlternativeCode = item;
+					if ReadFirstKey("AlternativeCode",INr,1,true) then begin
+						IVrw.ArtCode = INr.Code;
+						MatRowPut(IVr,rownr,IVrw);
+						if (IVVc_PasteArtCode(IVr,rownr,tstr,tstr,false,sernrf)) then begin
+							IVDchsum(IVr,rownr);
+						end;
+					end;
+				end;
+				MatRowGet(IVr,rownr,IVrw);
+				IVrw.Quant = StringToVal(ImportField,M4Qty);
+				IVrw.Price = StringToVal(ImportField,M423VAL);
+				IVrw.Sum = StringToVal(ImportField,M4VAL);
+				rebate = StringToVal(ImportField,M41Val);
+				if rebate > 0 then begin
+					IVrw.vRebate = rebate;
+				end;
+				IVrw.VATCode = VIb.VATCode;
+				MatRowPut(IVr,rownr,IVrw);
+				IVDchsum(IVr,rownr);
+				IVSumup(IVr,true);
+				IVr.Sum1 = SubTotal;
+				IVr.Sum3 = VAT;
+				IVr.Sum4 = Total;
+				rownr = rownr +1;
+				RecordUpdate(oldIVr,IVr,false);
+			end;
+			
+			testf = NextImportLine(true);
+		
+		end; 
+		CloseFile;
+		if movefile(filename,VIb.IVFilePath,VIb.IVMovePath) == 2 then begin 
+			Delete_File(VIb.IVMovePath & filename);
+			if movefile(filename,VIb.IVFilePath,VIb.IVMovePath) == 1 then begin end;
+		end;
+	end;
+  
+	testf = true; 
+	filename = FileNameFromFolder(VIb.IVFilePathKL,"");
+	if FileExists(VIb.IVFilePathKL & filename) and nonblank(filename) then begin
+		SetCompany(2,false);
+		OpenFile(VIb.IVFilePathKL & filename);
+		while (testf) begin
+			VEName = "";
+			VEName = ImportField;
+			if nonblank(VEName) then begin
+				RecordNew(IVr);
+				VECode = ImportField;
+				CUr.RegNr1 = VECode;
+				if ReadFirstKey("RegNr1",CUr,1,true) then begin
+					IVr.CustCode = CUr.Code;
+					if (PasteCust2InInv(IVr,LMb,"",false,warning,errstr,prepstr,invdatewarn,transdatewarn)) then begin
+					end else begin
+					IVr.Addr0 = VEName;
+					end;
+				end else begin
+				  IVr.Addr0 = VEName;
+				end;
+				if blank(IVr.PayDeal) then begin
+					IVr.PayDeal = VIb.VIPayDeal;
+				end;
+				IVr.OfficialSerNr = ImportField;
+				IVr.InvDate = StringToDate(ImportField);
+				IVr.TransDate = IVr.InvDate;
+				IVr.SerNr = NextSerNr("IVVc",IVr.InvDate,-1,false,"");
+				IVr.PayDate = StringToDate(ImportField);
+				bz = ImportField;
+				Object = "";
+				RemoveCharacterFromString(Object,ImportField);
+				if nonblank(IVr.Objects) then begin
+					IVr.Objects = IVr.Objects & "," & Object;
+				end else begin
+				  IVr.Objects = Object;
+				end;
+				IVr.Location = ImportField;
+				SubTotal = StringToVal(ImportField,M4Val);
+				VAT = StringToVal(ImportField,M4Val);
+				Total = StringToVal(ImportField,M4Val);
+				Userr.Name = ImportField;
+				if ReadFirstKey("Name",Userr,1,true) then begin
+					IVr.SalesMan = Userr.Code;
+				end;
+				IVr.DelAddr4 = ImportField;
+				rownr = 0;
+				RecordStore(IVr,false);
+			end else begin
+				RecordCopy(oldIVr,IVr);
+				bz = ImportField;
+				item = "";
+				item = ImportField;
+				if nonblank(item) then begin
+					INr.AlternativeCode = item;
+					if ReadFirstKey("AlternativeCode",INr,1,true) then begin
+						IVrw.ArtCode = INr.Code;
+						MatRowPut(IVr,rownr,IVrw);
+						if (IVVc_PasteArtCode(IVr,rownr,tstr,tstr,false,sernrf)) then begin
+							IVDchsum(IVr,rownr);
+						end;
+					end;
+				end;
+				MatRowGet(IVr,rownr,IVrw);
+				IVrw.Quant = StringToVal(ImportField,M4Qty);
+				IVrw.Price = StringToVal(ImportField,M423VAL);
+				IVrw.Sum = StringToVal(ImportField,M4VAL);
+				rebate = StringToVal(ImportField,M41Val);
+				if rebate > 0 then begin
+					IVrw.vRebate = rebate;
+				end;
+				IVrw.VATCode = VIb.VATCode;
+				MatRowPut(IVr,rownr,IVrw);
+				IVDchsum(IVr,rownr);
+				IVSumup(IVr,true);
+				IVr.Sum1 = SubTotal;
+				IVr.Sum3 = VAT;
+				IVr.Sum4 = Total;
+				rownr = rownr +1;
+				RecordUpdate(oldIVr,IVr,false);
+			end;
+			
+			testf = NextImportLine(true);
+		
+		end; 
+		CloseFile;
+		if movefile(filename,VIb.IVFilePathKL,VIb.IVMovePathKL) == 2 then begin 
+			Delete_File(VIb.IVMovePathKL & filename);
+			if movefile(filename,VIb.IVFilePathKL,VIb.IVMovePathKL) == 1 then begin end;
+		end;
+	end;
+	
+	
+	 
+	testf = true; 
+	filename = FileNameFromFolder(VIb.IVFilePath1,"");
+	if FileExists(VIb.IVFilePath1 & filename) and nonblank(filename) then begin
+		SetCompany(1,false);
+		OpenFile(VIb.IVFilePath1 & filename);
+		while (testf) begin
+			VEName = "";
+			VEName = ImportField;
+			if nonblank(VEName) then begin
+				RecordNew(IVr);
+				VECode = ImportField;
+				CUr.RegNr1 = VECode;
+				if ReadFirstKey("RegNr1",CUr,1,true) then begin
+					IVr.CustCode = CUr.Code;
+					if (PasteCust2InInv(IVr,LMb,"",false,warning,errstr,prepstr,invdatewarn,transdatewarn)) then begin
+					end else begin
+					IVr.Addr0 = VEName;
+					end;
+				end else begin
+				  IVr.Addr0 = VEName;
+				end;
+				if blank(IVr.PayDeal) then begin
+					IVr.PayDeal = VIb.VIPayDeal;
+				end;
+				IVr.OfficialSerNr = ImportField;
+				IVr.InvDate = StringToDate(ImportField);
+				IVr.TransDate = IVr.InvDate;
+				IVr.SerNr = NextSerNr("IVVc",IVr.InvDate,-1,false,"");
+				IVr.PayDate = StringToDate(ImportField);
+				bz = ImportField;
+				Object = "";
+				RemoveCharacterFromString(Object,ImportField);
+				if nonblank(IVr.Objects) then begin
+					IVr.Objects = IVr.Objects & "," & Object;
+				end else begin
+				  IVr.Objects = Object;
+				end;
+				IVr.Location = ImportField;
+				SubTotal = StringToVal(ImportField,M4Val);
+				VAT = StringToVal(ImportField,M4Val);
+				Total = StringToVal(ImportField,M4Val);
+				Userr.Name = ImportField;
+				if ReadFirstKey("Name",Userr,1,true) then begin
+					IVr.SalesMan = Userr.Code;
+				end;
+				IVr.DelAddr4 = ImportField;
+				rownr = 0;
+				RecordStore(IVr,false);
+			end else begin
+				RecordCopy(oldIVr,IVr);
+				bz = ImportField;
+				item = "";
+				item = ImportField;
+				if nonblank(item) then begin
+					INr.AlternativeCode = item;
+					if ReadFirstKey("AlternativeCode",INr,1,true) then begin
+						IVrw.ArtCode = INr.Code;
+						MatRowPut(IVr,rownr,IVrw);
+						if (IVVc_PasteArtCode(IVr,rownr,tstr,tstr,false,sernrf)) then begin
+							IVDchsum(IVr,rownr);
+						end;
+					end;
+				end;
+				MatRowGet(IVr,rownr,IVrw);
+				IVrw.Quant = StringToVal(ImportField,M4Qty);
+				IVrw.Price = StringToVal(ImportField,M423VAL);
+				IVrw.Sum = StringToVal(ImportField,M4VAL);
+				rebate = StringToVal(ImportField,M41Val);
+				if rebate > 0 then begin
+					IVrw.vRebate = rebate;
+				end;
+				IVrw.VATCode = VIb.VATCode;
+				MatRowPut(IVr,rownr,IVrw);
+				IVDchsum(IVr,rownr);
+				IVSumup(IVr,true);
+				IVr.Sum1 = SubTotal;
+				IVr.Sum3 = VAT;
+				IVr.Sum4 = Total;
+				rownr = rownr +1;
+				RecordUpdate(oldIVr,IVr,false);
+			end;
+			
+			testf = NextImportLine(true);
+		
+		end; 
+		CloseFile;
+		if movefile(filename,VIb.IVFilePath1,VIb.IVMovePath1) == 2 then begin 
+			Delete_File(VIb.IVMovePath1 & filename);
+			if movefile(filename,VIb.IVFilePath1,VIb.IVMovePath1) == 1 then begin end;
+		end;
+	end;
+	
+
+	testf = true; 
+	filename = FileNameFromFolder(VIb.IVFilePath4,"");
+	if FileExists(VIb.IVFilePath4 & filename) and nonblank(filename) then begin
+		SetCompany(6,false);
+		OpenFile(VIb.IVFilePath4 & filename);
+		while (testf) begin
+			VEName = "";
+			VEName = ImportField;
+			if nonblank(VEName) then begin
+				RecordNew(IVr);
+				VECode = ImportField;
+				CUr.RegNr1 = VECode;
+				if ReadFirstKey("RegNr1",CUr,1,true) then begin
+					IVr.CustCode = CUr.Code;
+					if (PasteCust2InInv(IVr,LMb,"",false,warning,errstr,prepstr,invdatewarn,transdatewarn)) then begin
+					end else begin
+					IVr.Addr0 = VEName;
+					end;
+				end else begin
+				  IVr.Addr0 = VEName;
+				end;
+				if blank(IVr.PayDeal) then begin
+					IVr.PayDeal = VIb.VIPayDeal;
+				end;
+				IVr.OfficialSerNr = ImportField;
+				IVr.InvDate = StringToDate(ImportField);
+				IVr.TransDate = IVr.InvDate;
+				IVr.SerNr = NextSerNr("IVVc",IVr.InvDate,-1,false,"");
+				IVr.PayDate = StringToDate(ImportField);
+				bz = ImportField;
+				Object = "";
+				RemoveCharacterFromString(Object,ImportField);
+				if nonblank(IVr.Objects) then begin
+					IVr.Objects = IVr.Objects & "," & Object;
+				end else begin
+				  IVr.Objects = Object;
+				end;
+				IVr.Location = ImportField;
+				SubTotal = StringToVal(ImportField,M4Val);
+				VAT = StringToVal(ImportField,M4Val);
+				Total = StringToVal(ImportField,M4Val);
+				Userr.Name = ImportField;
+				if ReadFirstKey("Name",Userr,1,true) then begin
+					IVr.SalesMan = Userr.Code;
+				end;
+				IVr.DelAddr4 = ImportField;
+				rownr = 0;
+				RecordStore(IVr,false);
+			end else begin
+				RecordCopy(oldIVr,IVr);
+				bz = ImportField;
+				item = "";
+				item = ImportField;
+				if nonblank(item) then begin
+					INr.AlternativeCode = item;
+					if ReadFirstKey("AlternativeCode",INr,1,true) then begin
+						IVrw.ArtCode = INr.Code;
+						MatRowPut(IVr,rownr,IVrw);
+						if (IVVc_PasteArtCode(IVr,rownr,tstr,tstr,false,sernrf)) then begin
+							IVDchsum(IVr,rownr);
+						end;
+					end;
+				end;
+				MatRowGet(IVr,rownr,IVrw);
+				IVrw.Quant = StringToVal(ImportField,M4Qty);
+				IVrw.Price = StringToVal(ImportField,M423VAL);
+				IVrw.Sum = StringToVal(ImportField,M4VAL);
+				rebate = StringToVal(ImportField,M41Val);
+				if rebate > 0 then begin
+					IVrw.vRebate = rebate;
+				end;
+				IVrw.VATCode = VIb.VATCode;
+				MatRowPut(IVr,rownr,IVrw);
+				IVDchsum(IVr,rownr);
+				IVSumup(IVr,true);
+				IVr.Sum1 = SubTotal;
+				IVr.Sum3 = VAT;
+				IVr.Sum4 = Total;
+				rownr = rownr +1;
+				RecordUpdate(oldIVr,IVr,false);
+			end;
+			
+			testf = NextImportLine(true);
+		
+		end; 
+		CloseFile;
+		if movefile(filename,VIb.IVFilePath4,VIb.IVMovePath4) == 2 then begin 
+			Delete_File(VIb.IVMovePath4 & filename);
+			if movefile(filename,VIb.IVFilePath4,VIb.IVMovePath4) == 1 then begin end;
+		end;
+	end;
+	
+return;
+end;

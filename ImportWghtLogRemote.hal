@@ -1,0 +1,12 @@
+global
+updating procedure ImportWghtLogRemote(area fArea)
+begin
+  string 255 FileName;
+
+  FileName = "tmp/WghtLog.txt";
+  WriteAreaToFile(fArea,FileName,0);
+  return;
+end;
+
+
+

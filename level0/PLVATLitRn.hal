@@ -1,0 +1,528 @@
+external function val FindVAT(string,val,Integer,Integer);
+external function val MulRateToBase1(var string,val,val,val,val,val,val,roundmode);
+external procedure HT2Per(date,date,var string);
+
+procedure PrintVATArray(record SMVc VATr)
+BEGIN
+  row SMVc VATrw;
+  Integer rwcnt,i;
+  Boolean testf,ratef,firstf;
+  val totvat,totvatbase,v,dv;
+
+  rwcnt = MatRowCnt(VATr);
+  for (i=0; i<rwcnt; i=i+1) begin
+    MatRowGet(VATr,i,VATrw);
+    if ((nonblank(VATrw.DebVal)) or (nonblank(VATrw.CredVal))) then begin
+      StartFormat(15);
+       OutString(3,0,VATrw.VATCode,false);
+       OutVal(6,0,VATrw.DebVal,M4Val,true);
+       OutVal(1,0,VATrw.CredVal,M4Val,true);
+      EndFormat;
+    end;
+  end;  
+  RETURN;
+END;
+
+procedure SetupVATArray(var record SMVc VATr)
+BEGIN
+  row SMVc SMrw;
+  Integer rwcnt,i;
+  record VATCodeBlock VATRec;
+  row VATCodeBlock VATrw;
+  
+  RecordNew(VATr);
+  BlockLoad(VATRec);  
+  rwcnt = MatRowCnt(VATRec);
+  for (i=0; i<rwcnt; i=i+1) begin
+    MatRowGet(VATRec,i,VATrw);
+    SMrw.VATCode = VATrw.VATCode;
+    SMrw.DebVal = blankval;
+    SMrw.CredVal = blankval;
+    MatRowPut(VATr,i,SMrw);
+  end;
+  RETURN;
+END;
+
+procedure AddToVATArray(var record SMVc VATr,string vatcode,val sum,val vat)
+BEGIN
+  row SMVc VATrw;
+  Integer rwcnt,i;
+  
+  rwcnt = MatRowCnt(VATr);
+  for (i=0; i<rwcnt; i=i+1) begin
+    MatRowGet(VATr,i,VATrw);
+    if (vatcode==VATrw.VATCode) then begin
+      VATrw.DebVal = VATrw.DebVal + sum;
+      VATrw.CredVal = VATrw.CredVal + vat;
+      MatRowPut(VATr,i,VATrw);
+    end;
+  end;
+  RETURN;
+END;
+
+procedure PrintVIPLVAT(record RcVc RepSpec,record VIVc VIr,var integer rownr,var val totsum, var val totvat,string curvatcode,
+                       record SMVc TotVATr,record SMVc VIVATr)
+begin
+  record CUVc Ver;
+  val sum,vat;
+  string 30 ivnr;
+  Boolean testf;
+  row VIVc VIrw;
+  Integer i,rwcnt;
+  val Sum1,Sum3,t,t2;
+  
+  if (RepSpec.flags[1]==3) then begin
+    rwcnt = MatRowCnt(VIr);
+    for (i=0;i<rwcnt;i=i+1) begin
+      MatRowGet(VIr,i,VIrw);
+      if (VIrw.VATCode==curvatcode) then begin
+        sum1 = sum1 + VIrw.Sum;
+        t2 = FindVAT(VIrw.VATCode,VIrw.Sum,0,0);
+        sum3 = sum3 + t2;
+        testf = true;
+
+        t = mulratetobase1(VIr.CurncyCode,VIrw.Sum,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
+        t2 = mulratetobase1(VIr.CurncyCode,t2,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
+        if (VIr.InvType==kInvoiceTypeCredit or VIr.InvType==kInvoiceTypeCreditSpecialSales) then begin
+          t = -t;
+          t2 = -t2;
+        end;
+        AddToVATArray(VIVATr,VIrw.VATCode,t,t2);
+        AddToVATArray(TotVATr,VIrw.VATCode,t,t2);
+      end;
+    end;
+  end else begin
+    if (nonblank(RepSpec.FirstAcc)) then begin
+      rwcnt = MatRowCnt(VIr);
+      for (i=0;i<rwcnt;i=i+1) begin
+        MatRowGet(VIr,i,VIrw);
+        if (VIrw.VATCode==RepSpec.FirstAcc) then begin
+          sum1 = sum1 + VIrw.Sum;
+          t2 = FindVAT(VIrw.VATCode,VIrw.Sum,0,0);
+          sum3 = sum3 + t2;
+          testf = true;
+
+          t = mulratetobase1(VIr.CurncyCode,VIrw.Sum,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
+          t2 = mulratetobase1(VIr.CurncyCode,t2,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
+          if (VIr.InvType==kInvoiceTypeCredit or VIr.InvType==kInvoiceTypeCreditSpecialSales) then begin
+            t = -t;
+            t2 = -t2;
+          end;
+          AddToVATArray(VIVATr,VIrw.VATCode,t,t2);
+          AddToVATArray(TotVATr,VIrw.VATCode,t,t2);
+        end;
+      end;
+      testf = true;
+    end else begin
+      sum1 = VIr.PayVal-VIr.VATVal;
+      if (blank(VIr.VATVal) and (VIr.CalcVATVal <> 0 )) then begin
+        sum3 = VIr.CalcVATVal;
+        //PST-start
+        sum1 = VIr.PayVal-VIr.CalcVATVal;
+        //PST-end
+       end else begin
+        sum3 = VIr.VATVal;
+      end;
+      testf = true;
+    end;
+  end;
+  if (testf==false) then begin goto LPrintVIPLVAT; end;
+
+  if (nonblank(RepSpec.f4)) then begin
+    ivnr = RepSpec.f4 & VIr.SerNr;
+  end else begin
+    ivnr = VIr.InvoiceNr;
+  end;
+  Ver.Code = VIr.VECode;
+  testf = readfirstmain(Ver,1,true);
+  sum = mulratetobase1(VIr.CurncyCode,sum1,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
+  vat = mulratetobase1(VIr.CurncyCode,sum3,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
+  if (VIr.InvType==kInvoiceTypeCredit or VIr.InvType==kInvoiceTypeCreditSpecialSales) then begin
+    sum = -sum;
+    vat = -vat;
+  end;
+  
+  StartFormat(15);
+   Outstring(0,0,rownr,false);
+   OutString(2,0,VIr.InvDate,false);
+   OutStringId(3,"DblVIVc",ivnr,false,VIr.SerNr);
+   if (RepSpec.flags[8]==0) then begin
+     OutString(4,0,VEr.VATNr,false);
+   end else begin
+     OutString(4,0,VEr.RegNr1,false);
+   end;
+   OutString(5,0,VIr.VEName,false);
+   OutString(6,0,sum,true);
+   OutString(1,0,vat,true);
+  endformat;
+  totsum = totsum + sum;
+  totvat = totvat + vat;
+  rownr = rownr + 1;
+LPrintVIPLVAT:;  
+  return;
+end;
+
+procedure GroupDocuments(record RcVc RepSpec,record ExpVc Expr, string vatcode, record ExpVc Exp2r)
+begin
+  Boolean testf,found;
+  row ExpVc Exprw,Exp2rw;
+  Integer i,rwcnt,j,rwcnt2,di;
+
+  RecordNew(Exp2r);
+  rwcnt = MatRowCnt(Expr);
+  for (i = 0; i < rwcnt; i = i + 1) begin
+    MatRowGet(Expr, i, Exprw);
+
+    testf = true;
+    // skip row if incorrect vat code
+    if (nonblank(vatcode) and (Exprw.VATCode != vatcode)) then begin testf = false; end;
+    if (blank(Exprw.VECode) or blank(Exprw.DocNr) or blank(Exprw.Sum)) then begin testf = false; end;
+    if (DateInRange(Exprw.ExpDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin testf = false; end;
+    if (testf) then begin
+      rwcnt2 = MatRowCnt(Exp2r);
+      found = false;
+      di = -1;
+      j = 0;
+      // - was there a row with same supplier and document number?
+      while (!found and (j<rwcnt2)) begin
+        MatRowGet(Exp2r,j,Exp2rw);
+        if ((Exp2rw.VECode==Exprw.VECode) and (Exp2rw.DocNr==Exprw.DocNr) and (Exp2rw.ExpDate==Exprw.ExpDate)) then begin
+          found = true;
+          di = j;
+        end;
+        j = j + 1;
+      end;
+
+      if (found) then begin
+        // update sums
+        Exp2rw.Sum = Exp2rw.Sum + Exprw.Sum;
+        Exp2rw.VATSum = Exp2rw.VATSum + Exprw.VATSum;
+        MatRowPut(Exp2r, di, Exp2rw);
+      end else begin
+        // append new row
+        Exp2rw.VECode = Exprw.VECode;
+        Exp2rw.ExpDate = Exprw.ExpDate;
+        Exp2rw.DocNr = Exprw.DocNr;
+        Exp2rw.Sum = Exprw.Sum;
+        Exp2rw.VATSum = Exprw.VATSum;
+        MatRowInsert(Exp2r, rwcnt2, Exp2rw);
+      end;
+    end;
+  end;
+
+  return;
+end;
+
+procedure PrintExpVAT(record RcVc RepSpec, record ExpVc Expr, var Integer rownr, var val totsum, var val totvat, string curvatcode,
+                      record SMVc TotVATr, record SMVc VIVATr)
+begin
+  record CUVc VEr;
+  Boolean testf;
+  record ExpVc Exp2r;
+  row ExpVc Exprw;
+  Integer i, rwcnt;
+  string 20 exp_date;
+  val sum1, sum3, sum, vat;
+
+  GroupDocuments(RepSpec,Expr, curvatcode, Exp2r);
+  rwcnt = MatRowCnt(Exp2r);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(Exp2r, i, Exprw);
+    testf = true;
+    if (DateInRange(Exprw.ExpDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin testf = false; end;
+    if (testf) then begin
+      sum1 = Exprw.Sum - Exprw.VATSum;
+      sum3 = Exprw.VATSum;
+
+      sum = MulRateToBase1(Expr.CurncyCode, sum1, Expr.FrRate, Expr.ToRateB1, Expr.ToRateB2, Expr.BaseRate1, Expr.BaseRate2,DefaultCurRoundOff);
+      vat = MulRateToBase1(Expr.CurncyCode, sum3, Expr.FrRate, Expr.ToRateB1, Expr.ToRateB2, Expr.BaseRate1, Expr.BaseRate2,DefaultCurRoundOff);
+      if (RepSpec.flags[1] == 3) then begin
+        AddToVATArray(VIVATr, Exprw.VATCode, sum, vat);
+        AddToVATArray(TotVATr, Exprw.VATCode, sum, vat);
+      end;
+      VEr.Code = Exprw.VECode;
+      testf = ReadFirstMain(VEr, 1, true);
+      exp_date = Exprw.ExpDate;
+      if (blank(exp_date)) then begin
+        exp_date = Expr.DocDate;
+      end;
+      StartFormat(15);
+      Outstring(0, 0, rownr, false);
+      OutString(2, 0, exp_date, false);
+      OutString(3, 0, Exprw.DocNr, false);
+      if (RepSpec.flags[8] == 0) then begin
+        OutString(4, 0, VEr.VATNr, false);
+      end else begin
+        OutString(4, 0, VEr.RegNr1, false);
+      end;
+      OutString(5, 0, VEr.Name, false);
+      OutString(6, 0, sum, true);
+      OutString(1, 0, vat, true);
+      EndFormat;
+
+      totsum = totsum + sum;
+      totvat = totvat + vat;
+      rownr = rownr + 1;
+    end;
+  end;
+  return;
+end;
+
+function Boolean CheckExpense(record ExpVc Expr, string vatcode)
+begin
+  row ExpVc Exprw;
+  Integer i,rwcnt;
+  Boolean result;
+  record CUVc VEr;
+
+  result = false;
+  rwcnt = MatRowCnt(Expr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(Expr,i,Exprw);
+
+    // at least one row with supplier, document no and sum
+    if (nonblank(Exprw.Sum) and
+        nonblank(Exprw.DocNr) and
+        nonblank(Exprw.VECode)) then begin
+      VEr.Code = Exprw.VECode;
+      if (ReadFirstMain(VEr, 1, true)) then begin
+        if (blank(vatcode) or (Exprw.VATCode == vatcode)) then begin
+          result = true;
+          goto LCheckExpense;
+        end;
+      end;
+    end;
+  end; // for
+
+LCheckExpense:;
+  CheckExpense = result;
+  return;
+end;
+
+procedure DoPrintExpenses(record RcVc RepSpec, var Integer rownr, var val totsum, var val totvat, string curvatcode,
+                       record SMVc TotVATr)
+begin
+  record ExpVc Expr;
+  row ExpVc Exprw;
+  string 20 ckey;
+  record SMVc VIVATr;
+  Boolean testf,TrHs,divider,date_in_range;
+
+  divider = false;
+  ckey = "SerNr";
+  if (RepSpec.flags[1] == 1) then begin
+    ckey = "TransDate";
+    Expr.TransDate = RepSpec.sStartDate;
+  end;
+
+  TrHs = true;
+  while (LoopKey(ckey, Expr, 1, TrHs)) begin
+    date_in_range = DateInRange(Expr.TransDate, RepSpec.sStartDate, RepSpec.sEndDate);
+    if ((RepSpec.flags[1]==1) and (date_in_range==false)) then begin
+      TrHs = false;
+    end;
+    if (TrHs) then begin
+      testf = true;
+      if (Expr.Invalid != 0) then begin testf = false; end;
+      if (Expr.OKFlag == 0) then begin testf = false; end;
+      if (CheckExpense(Expr, curvatcode)==false) then begin testf = false; end;
+      if (date_in_range == false) then begin testf = false; end;
+
+      if (testf) then begin
+        if (RepSpec.flags[1] == 3) then begin
+          SetupVATArray(VIVATr);
+        end;
+        if (divider==false) then begin
+          Black_Divider(0, 1);
+          divider = true;
+        end;
+        PrintExpVAT(RepSpec, Expr, rownr, totsum, totvat, curvatcode, TotVATr, VIVATr);
+        if (RepSpec.flags[1] == 3) then begin
+          PrintVATArray(VIVATr);
+        end;
+      end;
+    end;
+  end;
+  return;
+end;
+
+procedure DoPLVATLitRn(record RcVc RepSpec,var Integer rownr,var val totsum,var val totvat,string curvatcode,
+                       record SMVc TotVATr,var Boolean divider)
+BEGIN
+  record VIVc VIr;
+  record VIVc VI2r;
+  row VIVc VIrw;
+  longint friv,toiv;
+  string 20 ckey;
+  record SMVc VIVATr;
+  Boolean testf,TrHs;
+  Integer i,rwcnt;
+
+  friv = FirstinRange(RepSpec.f3,10);
+  toiv = LastinRange(RepSpec.f3,10);
+  if (RepSpec.flags[1]==0) then begin
+    ckey = "SerNr";
+  end;
+  if (RepSpec.flags[1]==1) then begin
+    ckey = "InvDate";
+  end;
+  if (RepSpec.flags[1]==2) then begin
+    ckey = "InvoiceNr";
+  end;
+  if (RepSpec.flags[1]==3) then begin
+    ckey = "SerNr";
+  end;
+  Trhs = true;
+  while (loopKey(ckey,VIr,1,TrHS)) begin
+    testf = true;
+    if (VIr.SerNr < friv) then begin
+      testf = false;
+    end;
+    if (toiv > 0 and toiv < VIr.SerNr) then begin
+      testf = false;
+    end;
+    if (dateinrange(VIr.InvDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin
+      testf = false;
+    end;
+    if (VIr.ExportFlag == 0 and RepSpec.flags[5]<> 1) then begin
+      testf = false;
+    end;
+    if (VIr.ExportFlag == 1 and RepSpec.flags[6]<> 1) then begin
+      testf = false;
+    end;
+    if (VIr.ExportFlag == 2 and RepSpec.flags[7]<> 1) then begin
+      testf = false;
+    end;
+    if (nonblank(RepSpec.f1) and SetInSet(VIr.PayDeal,RepSpec.f1)) then begin
+      testf = false;
+    end;
+    if (VIr.Invalid<>0) then begin testf = false; end;
+    if (VIr.OKFlag==0) then begin testf = false; end;
+
+    if (testf and nonblank(RepSPec.f1)) then begin
+      VI2r.CredInv = VIr.SerNr;
+      if (ReadfirstKey("CredInv",VI2r,1,true)) then begin
+        if (SetInSet(VI2r.PayDeal,RepSpec.f1)) then begin
+          testf = false;
+        end;
+      end;
+    end;
+    if (testf) then begin
+      if (nonblank(RepSpec.FirstAcc)) then begin
+        testf = false;
+        rwcnt = MatRowCnt(VIr);
+        for (i=0;i<rwcnt;i=i+1) begin
+          MatRowGet(VIr,i,VIrw);
+          if (VIrw.VATCode==RepSpec.FirstAcc) then begin
+            testf = true;
+            i = rwcnt;
+          end;
+        end;
+      end;
+    end;
+    if (testf) then begin
+      if (RepSpec.flags[1]==3) then begin
+        SetupVATArray(VIVATr);  
+      end;
+      if (divider==false) then begin
+        Black_Divider(0, 1);
+        divider = true;
+      end;
+      PrintVIPLVAT(RepSpec,VIr,rownr,totsum,totvat,curvatcode,TotVATr,VIVATr);
+      if (RepSpec.flags[1]==3) then begin
+        PrintVATArray(VIVATr);
+      end;
+    end;
+  end;
+  RETURN;
+END;
+  
+global 
+procedure PLVATLitRn(record RcVc RepSpec)
+begin
+  record CYBlock CYBl;
+  longint friv,toiv;
+  string 20 ckey;
+  string 255 tstr;
+  val totsum,totvat;
+  record VATCodeBlock VATCodeRec;
+  row VATCodeBlock VATCoderw;
+  Integer i,rwcnt;
+  Boolean testf;
+  record SMVc TotVATr;  
+  integer rw,rwc,rownr;
+  Boolean divider;
+  
+  rownr = 1;
+  blockload(CYBl);
+  friv = FirstinRange(RepSpec.f3,10);
+  toiv = LastinRange(RepSpec.f3,10);
+  StartReportJob(USetStr(14350));
+  rw = 1;
+  HT2Per(RepSpec.sStartDate,RepSPec.sEndDate,tstr);
+  Header(rw,tstr,1);
+  rw = rw +1;
+  tstr = CYBl.OrgNr;
+  Header(rw,tstr,0);
+  rw = rw +1;
+  tstr = CYBl.VATNr;
+  Header(rw,tstr,0);
+  rw = rw +1;
+  EndHeader;
+  SetrepCol(2,30);
+  SetrepCol(3,90);
+  SetrepCol(4,170);
+  SetrepCol(5,250);
+  SetrepCol(6,430);
+  
+  StartFormat(15);
+   OutString(0,0,USetStr(14343),false);
+   outstring(2,0,USetStr(14344),false);
+   OutString(3,0,USetStr(14345),false)
+   OutString(4,0,USetStr(14346),false);
+   OutString(5,0,USetStr(14347),false);
+   OutString(6,0,USetStr(14348),true);
+   OutString(1,0,USetStr(14349),true);
+  EndFormat;
+
+  divider = false;
+  if (RepSpec.flags[1]==3) then begin
+    RecordNew(TotVATr);    
+    SetupVATArray(TotVATr);  
+    
+    BlockLoad(VATCodeRec);
+    rwcnt = MatRowCnt(VATCodeRec);
+    for (i=0;i<rwcnt;i=i+1) begin
+      MatRowGet(VATCodeRec,i,VATCoderw);
+      testf = true;
+      if (nonblank(RepSpec.FirstAcc)) then begin
+        if (VATCoderw.VATCode!=RepSpec.FirstAcc) then begin testf = false; end;
+      end;
+      if (testf) then begin
+        DoPLVATLitRn(RepSpec,rownr,totsum,totvat,VATCoderw.VATCode,TotVATr,divider);
+        if (RepSpec.flags[2]==1) then begin
+          DoPrintExpenses(RepSpec, rownr, totsum, totvat, VATCoderw.VATCode, TotVATr);
+        end;
+      end;
+    end;
+  end else begin
+    DoPLVATLitRn(RepSpec,rownr,totsum,totvat,"",TotVATr,divider);
+    if (RepSpec.flags[2]==1) then begin
+      DoPrintExpenses(RepSpec, rownr, totsum, totvat, "", TotVATr);
+    end;
+  end;
+
+  Black_Divider(0,1);
+  if (RepSpec.flags[1]==3) then begin
+    PrintVATArray(TotVATr);
+    Gray_Divider(350,1);
+  end;
+  StartFormat(15);
+   OutString(0,0,USetStr(14351),false);
+   OutString(6,0,totsum,true);
+   OutString(1,0,totvat,true);
+  EndFormat;
+  EndJob;
+  return;
+end;
+

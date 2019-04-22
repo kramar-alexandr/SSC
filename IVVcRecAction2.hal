@@ -1,0 +1,23 @@
+global
+updating function LongInt IVVcRecordSave(var record IVVc IVr,record IVVc IV2r,LongInt stat,LongInt long4)
+BEGIN
+  LongInt res;
+  val LocOKNr;
+  record LocationVc Locr;
+
+  res = inner.IVVcRecordSave(IVr,IV2r,stat,long4);
+  //// GERDUKAS - siuntimo adresas!!!
+  Locr.Code = IVr.Location;
+  if (ReadFirstMain(Locr,1,true)) then begin
+    IVr.RefStr = Locr.Addr0;
+  end;
+  //START-CUST   January 29, 2015 by PST
+  if (UserCanAction("AutoFill",false)) then begin
+  	IVr.DelAddr4 = IVr.SerNr;
+  end;
+  //END-CUST January 29, 2015 by PST
+  ////
+  IVVcRecordSave = res; 
+  RETURN;
+END;
+

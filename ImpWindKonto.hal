@@ -1,0 +1,78 @@
+event startup
+begin
+
+  SetLangMode(LangLithuanian,"LIT",0);
+
+  Import("Preki÷ importas PRAGMA",ImpINKontoIn,ImpINKontoIn,modSY);
+  Import("Preki÷ pajamavimas PRAGMA",ImpPUKontoIn,ImpPUKontoIn,modSY);
+  Import("Tiekej÷ importas PRAGMA",ImpVEKontoIn,ImpVEKontoIn,modSY);
+  Import("IT importas PRAGMA",ImpITPragmaIn,ImpITPragmaIn,modSY);
+  Import("Pirkej÷ skol÷ importas PRAGMA",ImpARKontoIn,ImpARKontoIn,modSY);
+  Import("Transp. im. importas PRAGMA",ImpFrCompPragmaIn,ImpFrCompPragmaIn,modSY);
+  Import("Skol÷ tiekejams importas PRAGMA",ImpAPKontoIn,ImpAPKontoIn,modSY);
+
+  return;
+end;
+
+event DefineWindows
+begin
+  real x,h,h1,hl,h2,h3,h4,h5,h6,h7,hs,v,v2,vm,l,vs,f,t;
+
+  SetLangMode(LangLithuanian,"LIT",0);
+
+  WindowBegin("Frachto ¯mon˜",FreightCompanyDClass,CGview,FreightCompanyView);
+  SetWRect(64,80,509,540);
+  UseView(FreightCompanyVc);
+  v = 10; vs = 20; h = 150; h2 = 320;
+  EditField(h,v, 50,"Kodas",Normal,Code,false,0);
+  EditField(h,v+=vs,-40,"Tiek˜jas",Normal,VECode,false,VESClass); 
+  EditField(h,v+=vs,-40,"iVAZ maäinos numeris",Normal,iVAZNumber,false,0); 
+  EditField(h,v+=vs,-40,"iVAZ maäinos apraäymas",Normal,iVAZInfo,false,0); 
+  EditField(h,v+=vs,-40,"iVAZ vairuotojo vardas",Normal,iVAZName,false,0); 
+  EditField(h,v+=vs,-40,"iVAZ vairuotojo pavard˜",Normal,iVAZSurname,false,0); 
+  EditField(h,v+=vs,-40,"Pavadinimas",Normal,Company,false,0);
+  EditField(h,v+=vs,-40,"Registracijos nr.",Normal,CompanyRegNr,false,0);
+  EditField(h,v+=vs,-40,"Sunkveìimio inform.",Normal,TruckInfo,false,0);
+  EditField(h,v+=vs,-40,"Vairuotojas",Normal,Driver,false,0);
+  EditField(h,v+=vs,-40,"CMR tekstas",Normal,CMRText,false,0);
+
+  ButtonFrame(h,vm=(v+=40),290,6,"Web paslaug÷ prisijungimas");
+  EditField(h,v,80,"Tipas",Normal,WebService,false,SetSClass);
+  EditField(h,v+=vs,-40,"Saugus raktas",Normal,WebServiceKey,false,0);
+  EditField(h,v+=vs,-40,"Slaptaìodis",Normal,WebServicePasswd,false,0);
+  EditField(h,v+=vs,80,"Sˆskaitos nr.",Normal,WebServiceAccNr,false,0);
+  EditField(h2,v,-40,"Numeris",Normal,WebServiceMeterNr,false,0);
+  EditField(h,v+=vs,-40,"Laikas tarp prisijungim÷",Normal,DelSignature,false,SetSClass);
+  EndWindow;
+
+  WindowBegin("Frachto °mon˜s",FreightCompanyLClass,CGmlist,FreightCompanyView);
+  SpawnClass(FreightCompanyDClass);
+  SetWRect(64,80,509,298);
+  Sizeable(-1,-1,0,0);
+  UseView(FreightCompanyVc);
+  RecordList(4,17,-21,-39);
+  RlColKey(4,2,"Kodas",Code,false,Code);
+  RlColKey(60,60,"Pavadinimas",Company,false,Company);
+//  RlColKey(-450,-450,"Sunkveìimis",TruckInfo,false,TruckInfo);
+//  RlColKey(-100,-100,"Vairuotojas",Driver,false,Driver);
+  RlColKey(250,250,"Sunkveìimis",TruckInfo,false,TruckInfo);
+  RlColKey(550,550,"Vairuotojas",Driver,false,Driver);
+
+  SearchField("Ieäkoti");
+  EndWindow;
+
+  WindowBegin("¯statyti frachto °mon«",FreightCompanySClass,CGslist,FreightCompanyView);
+  SetWRect(64,80,509,298);
+  Sizeable(-1,-1,0,0);
+  UseView(FreightCompanyVc);
+  SpawnClass(FreightCompanyDClass);
+  RecordList(4,17,-21,-39);
+  RlColKey(4,2,"Kodas",Code,false,Code);
+  RlColKey(60,60,"Pavadinimas",Company,false,Company);
+  RlColKey(-450,-450,"Sunkveìimis",TruckInfo,false,TruckInfo);
+  RlColKey(-150,-150,"Vairuotojas",Driver,false,Driver);
+  SearchField("Ieäkoti");
+  EndWindow;
+
+  return;
+end;

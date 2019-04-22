@@ -1,0 +1,554 @@
+external inner function Boolean VIVc_PasteVECode(var record VIVc,Integer,Boolean,Boolean,var string);
+remote inner function Boolean VIVc_PasteAccNumber(var record VIVc,string,Boolean,Integer);
+remote inner procedure VICalcVals(var record VIVc);
+external inner procedure VISumup(record VIVc,var val);
+remote inner procedure VIGetRate(var record VIVc);
+remote inner procedure VIVc_PastePayVal(var record VIVc);
+
+global updating
+procedure VIImportIn()
+begin
+	record VIVc IVr,oldIVr;
+	row VIVc IVrw;
+	record CUVc CUr;
+	string 20 regnr,vatnr;
+  string 255 warning,errstr,VECode,VEName,CurncyCode,ItemName,VATCode,InvoiceNo,Object,Account,filename,OldInvoiceNo;
+  date InvDate,DueDate;
+  record LocalMachineBlock LMb;
+  val sum,ct,rate,Total,TotalVAT,RowSumExclVAT;
+	longint sernr;
+	integer sernrf,rwcnt;
+	record LSerialPortDeviceVc LSPDr;
+	boolean res,serportf;
+	record VIVcImportBlock VIb;
+	boolean testf;
+	string 10 paydeal;
+	
+	blockload(VIb);
+	OldInvoiceNo = "";
+	testf = true; 
+	filename = FileNameFromFolder(VIb.VIFilePath,"");
+	if FileExists(VIb.VIFilePath & filename) and nonblank(filename) then begin
+		SetCompany(5,false);
+		OpenFile(VIb.VIFilePath & filename);
+		while (testf) begin
+			VECode = ImportField;
+			VEName = ImportField;
+			CurncyCode = ImportField;
+			Total = StringToVal(ImportField,M4Val);
+			TotalVAT = StringToVal(ImportField,M4Val);
+			ItemName = ImportField; 
+			RowSumExclVAT = StringToVal(ImportField,M4Val);
+			VATCode = ImportField;
+			InvoiceNo = ImportField;
+			InvDate = StringToDate(ImportField);
+			Object = ImportField;
+			Account = ImportField;
+			DueDate = StringToDate(ImportField);
+			if oldInvoiceNo == "" and nonblank(InvoiceNo) then begin
+				RecordNew(IVr);
+				IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
+				CUr.Code = VECode;
+				if ReadFirstMain(CUr,1,true) then begin
+					IVr.VECode = CUr.Code;
+					if (VIVc_PasteVECode(IVr,0,false,false,warning)==false) then begin
+					end;
+				end else begin
+					IVr.VEName = VEName;
+				end;
+				paydeal = IVr.PayDeal;
+				IVr.CurncyCode = CurncyCode;
+				VIGetRate(IVr);
+				IVr.InvDate = InvDate;
+				IVr.TransDate = InvDate;
+				IVr.DueDate = DueDate;
+				IVr.InvoiceNr = InvoiceNo;
+				IVr.PayVal = Total;
+				VIVc_PastePayVal(IVr);
+				if blank(paydeal) then begin
+					IVr.PayDeal = VIb.VIPayDeal;
+				end else begin
+				  IVr.PayDeal = paydeal;
+				end;
+				IVr.VATVal = TotalVAT;
+				IVrw.AccNumber = Account;
+				MatRowPut(IVr,0,IVrw);
+				if (VIVc_PasteAccNumber(IVr,"",1,0)) then begin
+				end;
+				MatRowGet(IVr,0,IVrw);
+				IVrw.Comment = ItemName;
+				IVrw.Objects = Object;
+				IVrw.VATCode = VATCode;
+				IVrw.Sum = RowSumExclVAT;
+				MatRowPut(IVr,0,IVrw);
+				VICalcVals(IVr);
+				VISumup(IVr,ct); 
+				RecordStore(IVr,true);
+				oldInvoiceNo = InvoiceNo;
+			end else begin
+				if InvoiceNo == oldInvoiceNo then begin
+					rwcnt = MatRowCnt(IVr);
+					RecordCopy(oldIVr,IVr);
+					IVrw.AccNumber = Account;
+					MatRowPut(IVr,rwcnt,IVrw);
+					if (VIVc_PasteAccNumber(IVr,"",1,rwcnt)) then begin
+					end;
+					MatRowGet(IVr,rwcnt,IVrw);
+					IVrw.Comment = ItemName;
+					IVrw.Objects = Object;
+					IVrw.VATCode = VATCode;
+					IVrw.Sum = RowSumExclVAT;
+					MatRowPut(IVr,rwcnt,IVrw);
+					VICalcVals(IVr);
+					VISumup(IVr,ct); 
+					RecordUpdate(oldIVr,IVr,false);
+				end else begin
+					RecordNew(IVr);
+					IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
+					CUr.Code = VECode;
+					if ReadFirstMain(CUr,1,true) then begin
+						IVr.VECode = CUr.Code;
+						if (VIVc_PasteVECode(IVr,0,false,false,warning)==false) then begin
+						end;
+					end else begin
+						IVr.VEName = VEName;
+					end;
+					paydeal = IVr.PayDeal;
+					IVr.CurncyCode = CurncyCode;
+					VIGetRate(IVr);
+					IVr.InvDate = InvDate;
+					IVr.TransDate = InvDate;
+					IVr.DueDate = DueDate;
+					IVr.InvoiceNr = InvoiceNo;
+					IVr.PayVal = Total;
+					VIVc_PastePayVal(IVr);
+					if blank(paydeal) then begin
+						IVr.PayDeal = VIb.VIPayDeal;
+					end else begin
+						IVr.PayDeal = paydeal;
+					end;
+					IVr.VATVal = TotalVAT;
+					IVrw.AccNumber = Account;
+					MatRowPut(IVr,0,IVrw);
+					if (VIVc_PasteAccNumber(IVr,"",1,0)) then begin
+					end;
+					MatRowGet(IVr,0,IVrw);
+					IVrw.Comment = ItemName;
+					IVrw.Objects = Object;
+					IVrw.VATCode = VATCode;
+					IVrw.Sum = RowSumExclVAT;
+					MatRowPut(IVr,0,IVrw);
+					VICalcVals(IVr);
+					VISumup(IVr,ct); 
+					RecordStore(IVr,true);
+					oldInvoiceNo = InvoiceNo;
+				end;
+			end;
+			skipf:;
+			testf = NextImportLine(true);
+		
+		end; 
+		CloseFile;
+		if movefile(filename,VIb.VIFilePath,VIb.VIMovePath) == 2 then begin 
+			Delete_File(VIb.VIMovePath & filename);
+			if movefile(filename,VIb.VIFilePath,VIb.VIMovePath) == 1 then begin end;
+		end;
+	end;
+	
+	OldInvoiceNo = "";
+	testf = true; 
+	filename = FileNameFromFolder(VIb.VIFilePathKL,"");
+	if FileExists(VIb.VIFilePathKL & filename) and nonblank(filename) then begin
+		SetCompany(2,false);
+		OpenFile(VIb.VIFilePathKL & filename);
+		while (testf) begin
+			VECode = ImportField;
+			VEName = ImportField;
+			CurncyCode = ImportField;
+			Total = StringToVal(ImportField,M4Val);
+			TotalVAT = StringToVal(ImportField,M4Val);
+			ItemName = ImportField; 
+			RowSumExclVAT = StringToVal(ImportField,M4Val);
+			VATCode = ImportField;
+			InvoiceNo = ImportField;
+			InvDate = StringToDate(ImportField);
+			Object = ImportField;
+			Account = ImportField;
+			DueDate = StringToDate(ImportField);
+			if oldInvoiceNo == "" and nonblank(InvoiceNo) then begin
+				RecordNew(IVr);
+				IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
+				CUr.Code = VECode;
+				if ReadFirstMain(CUr,1,true) then begin
+					IVr.VECode = CUr.Code;
+					if (VIVc_PasteVECode(IVr,0,false,false,warning)==false) then begin
+					end;
+				end else begin
+					IVr.VEName = VEName;
+				end;
+				paydeal = IVr.PayDeal;
+				IVr.CurncyCode = CurncyCode;
+				VIGetRate(IVr);
+				IVr.InvDate = InvDate;
+				IVr.TransDate = InvDate;
+				IVr.DueDate = DueDate;
+				IVr.InvoiceNr = InvoiceNo;
+				IVr.PayVal = Total;
+				VIVc_PastePayVal(IVr);
+				if blank(paydeal) then begin
+					IVr.PayDeal = VIb.VIPayDeal;
+				end else begin
+				  IVr.PayDeal = paydeal;
+				end;
+				IVr.VATVal = TotalVAT;
+				IVrw.AccNumber = Account;
+				MatRowPut(IVr,0,IVrw);
+				if (VIVc_PasteAccNumber(IVr,"",1,0)) then begin
+				end;
+				MatRowGet(IVr,0,IVrw);
+				IVrw.Comment = ItemName;
+				IVrw.Objects = Object;
+				IVrw.VATCode = VATCode;
+				IVrw.Sum = RowSumExclVAT;
+				MatRowPut(IVr,0,IVrw);
+				VICalcVals(IVr);
+				VISumup(IVr,ct); 
+				RecordStore(IVr,true);
+				oldInvoiceNo = InvoiceNo;
+			end else begin
+				if InvoiceNo == oldInvoiceNo then begin
+					rwcnt = MatRowCnt(IVr);
+					RecordCopy(oldIVr,IVr);
+					IVrw.AccNumber = Account;
+					MatRowPut(IVr,rwcnt,IVrw);
+					if (VIVc_PasteAccNumber(IVr,"",1,rwcnt)) then begin
+					end;
+					MatRowGet(IVr,rwcnt,IVrw);
+					IVrw.Comment = ItemName;
+					IVrw.Objects = Object;
+					IVrw.VATCode = VATCode;
+					IVrw.Sum = RowSumExclVAT;
+					MatRowPut(IVr,rwcnt,IVrw);
+					VICalcVals(IVr);
+					VISumup(IVr,ct); 
+					RecordUpdate(oldIVr,IVr,false);
+				end else begin
+					RecordNew(IVr);
+					IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
+					CUr.Code = VECode;
+					if ReadFirstMain(CUr,1,true) then begin
+						IVr.VECode = CUr.Code;
+						if (VIVc_PasteVECode(IVr,0,false,false,warning)==false) then begin
+						end;
+					end else begin
+						IVr.VEName = VEName;
+					end;
+					paydeal = IVr.PayDeal;
+					IVr.CurncyCode = CurncyCode;
+					VIGetRate(IVr);
+					IVr.InvDate = InvDate;
+					IVr.TransDate = InvDate;
+					IVr.DueDate = DueDate;
+					IVr.InvoiceNr = InvoiceNo;
+					IVr.PayVal = Total;
+					VIVc_PastePayVal(IVr);
+					if blank(paydeal) then begin
+						IVr.PayDeal = VIb.VIPayDeal;
+					end else begin
+						IVr.PayDeal = paydeal;
+					end;
+					IVr.VATVal = TotalVAT;
+					IVrw.AccNumber = Account;
+					MatRowPut(IVr,0,IVrw);
+					if (VIVc_PasteAccNumber(IVr,"",1,0)) then begin
+					end;
+					MatRowGet(IVr,0,IVrw);
+					IVrw.Comment = ItemName;
+					IVrw.Objects = Object;
+					IVrw.VATCode = VATCode;
+					IVrw.Sum = RowSumExclVAT;
+					MatRowPut(IVr,0,IVrw);
+					VICalcVals(IVr);
+					VISumup(IVr,ct); 
+					RecordStore(IVr,true);
+					oldInvoiceNo = InvoiceNo;
+				end;
+			end;
+			skipf:;
+			testf = NextImportLine(true);
+		
+		end; 
+		CloseFile;
+		if movefile(filename,VIb.VIFilePathKL,VIb.VIMovePathKL) == 2 then begin 
+			Delete_File(VIb.VIMovePathKL & filename);
+			if movefile(filename,VIb.VIFilePathKL,VIb.VIMovePathKL) == 1 then begin end;
+		end;
+	end;
+	
+	
+	
+	OldInvoiceNo = "";
+	testf = true; 
+	filename = FileNameFromFolder(VIb.VIFilePath1,"");
+	if FileExists(VIb.VIFilePath1 & filename) and nonblank(filename) then begin
+		SetCompany(1,false);
+		OpenFile(VIb.VIFilePath1 & filename);
+		while (testf) begin
+			VECode = ImportField;
+			VEName = ImportField;
+			CurncyCode = ImportField;
+			Total = StringToVal(ImportField,M4Val);
+			TotalVAT = StringToVal(ImportField,M4Val);
+			ItemName = ImportField; 
+			RowSumExclVAT = StringToVal(ImportField,M4Val);
+			VATCode = ImportField;
+			InvoiceNo = ImportField;
+			InvDate = StringToDate(ImportField);
+			Object = ImportField;
+			Account = ImportField;
+			DueDate = StringToDate(ImportField);
+			if oldInvoiceNo == "" and nonblank(InvoiceNo) then begin
+				RecordNew(IVr);
+				IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
+				CUr.Code = VECode;
+				if ReadFirstMain(CUr,1,true) then begin
+					IVr.VECode = CUr.Code;
+					if (VIVc_PasteVECode(IVr,0,false,false,warning)==false) then begin
+					end;
+				end else begin
+					IVr.VEName = VEName;
+				end;
+				paydeal = IVr.PayDeal;
+				IVr.CurncyCode = CurncyCode;
+				VIGetRate(IVr);
+				IVr.InvDate = InvDate;
+				IVr.TransDate = InvDate;
+				IVr.DueDate = DueDate;
+				IVr.InvoiceNr = InvoiceNo;
+				IVr.PayVal = Total;
+				VIVc_PastePayVal(IVr);
+				if blank(paydeal) then begin
+					IVr.PayDeal = VIb.VIPayDeal;
+				end else begin
+				  IVr.PayDeal = paydeal;
+				end;
+				IVr.VATVal = TotalVAT;
+				IVrw.AccNumber = Account;
+				MatRowPut(IVr,0,IVrw);
+				if (VIVc_PasteAccNumber(IVr,"",1,0)) then begin
+				end;
+				MatRowGet(IVr,0,IVrw);
+				IVrw.Comment = ItemName;
+				IVrw.Objects = Object;
+				IVrw.VATCode = VATCode;
+				IVrw.Sum = RowSumExclVAT;
+				MatRowPut(IVr,0,IVrw);
+				VICalcVals(IVr);
+				VISumup(IVr,ct); 
+				RecordStore(IVr,true);
+				oldInvoiceNo = InvoiceNo;
+			end else begin
+				if InvoiceNo == oldInvoiceNo then begin
+					rwcnt = MatRowCnt(IVr);
+					RecordCopy(oldIVr,IVr);
+					IVrw.AccNumber = Account;
+					MatRowPut(IVr,rwcnt,IVrw);
+					if (VIVc_PasteAccNumber(IVr,"",1,rwcnt)) then begin
+					end;
+					MatRowGet(IVr,rwcnt,IVrw);
+					IVrw.Comment = ItemName;
+					IVrw.Objects = Object;
+					IVrw.VATCode = VATCode;
+					IVrw.Sum = RowSumExclVAT;
+					MatRowPut(IVr,rwcnt,IVrw);
+					VICalcVals(IVr);
+					VISumup(IVr,ct); 
+					RecordUpdate(oldIVr,IVr,false);
+				end else begin
+					RecordNew(IVr);
+					IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
+					CUr.Code = VECode;
+					if ReadFirstMain(CUr,1,true) then begin
+						IVr.VECode = CUr.Code;
+						if (VIVc_PasteVECode(IVr,0,false,false,warning)==false) then begin
+						end;
+					end else begin
+						IVr.VEName = VEName;
+					end;
+					paydeal = IVr.PayDeal;
+					IVr.CurncyCode = CurncyCode;
+					VIGetRate(IVr);
+					IVr.InvDate = InvDate;
+					IVr.TransDate = InvDate;
+					IVr.DueDate = DueDate;
+					IVr.InvoiceNr = InvoiceNo;
+					IVr.PayVal = Total;
+					VIVc_PastePayVal(IVr);
+					if blank(paydeal) then begin
+						IVr.PayDeal = VIb.VIPayDeal;
+					end else begin
+						IVr.PayDeal = paydeal;
+					end;
+					IVr.VATVal = TotalVAT;
+					IVrw.AccNumber = Account;
+					MatRowPut(IVr,0,IVrw);
+					if (VIVc_PasteAccNumber(IVr,"",1,0)) then begin
+					end;
+					MatRowGet(IVr,0,IVrw);
+					IVrw.Comment = ItemName;
+					IVrw.Objects = Object;
+					IVrw.VATCode = VATCode;
+					IVrw.Sum = RowSumExclVAT;
+					MatRowPut(IVr,0,IVrw);
+					VICalcVals(IVr);
+					VISumup(IVr,ct); 
+					RecordStore(IVr,true);
+					oldInvoiceNo = InvoiceNo;
+				end;
+			end;
+			skipf:;
+			testf = NextImportLine(true);
+		
+		end; 
+		CloseFile;
+		if movefile(filename,VIb.VIFilePath1,VIb.VIMovePath1) == 2 then begin 
+			Delete_File(VIb.VIMovePath1 & filename);
+			if movefile(filename,VIb.VIFilePath1,VIb.VIMovePath1) == 1 then begin end;
+		end;
+	end;
+	
+	
+
+	OldInvoiceNo = "";
+	testf = true; 
+	filename = FileNameFromFolder(VIb.VIFilePath4,"");
+	if FileExists(VIb.VIFilePath4 & filename) and nonblank(filename) then begin
+		SetCompany(6,false);
+		OpenFile(VIb.VIFilePath4 & filename);
+		while (testf) begin
+			VECode = ImportField;
+			VEName = ImportField;
+			CurncyCode = ImportField;
+			Total = StringToVal(ImportField,M4Val);
+			TotalVAT = StringToVal(ImportField,M4Val);
+			ItemName = ImportField; 
+			RowSumExclVAT = StringToVal(ImportField,M4Val);
+			VATCode = ImportField;
+			InvoiceNo = ImportField;
+			InvDate = StringToDate(ImportField);
+			Object = ImportField;
+			Account = ImportField;
+			DueDate = StringToDate(ImportField);
+			if oldInvoiceNo == "" and nonblank(InvoiceNo) then begin
+				RecordNew(IVr);
+				IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
+				CUr.Code = VECode;
+				if ReadFirstMain(CUr,1,true) then begin
+					IVr.VECode = CUr.Code;
+					if (VIVc_PasteVECode(IVr,0,false,false,warning)==false) then begin
+					end;
+				end else begin
+					IVr.VEName = VEName;
+				end;
+				paydeal = IVr.PayDeal;
+				IVr.CurncyCode = CurncyCode;
+				VIGetRate(IVr);
+				IVr.InvDate = InvDate;
+				IVr.TransDate = InvDate;
+				IVr.DueDate = DueDate;
+				IVr.InvoiceNr = InvoiceNo;
+				IVr.PayVal = Total;
+				VIVc_PastePayVal(IVr);
+				if blank(paydeal) then begin
+					IVr.PayDeal = VIb.VIPayDeal;
+				end else begin
+				  IVr.PayDeal = paydeal;
+				end;
+				IVr.VATVal = TotalVAT;
+				IVrw.AccNumber = Account;
+				MatRowPut(IVr,0,IVrw);
+				if (VIVc_PasteAccNumber(IVr,"",1,0)) then begin
+				end;
+				MatRowGet(IVr,0,IVrw);
+				IVrw.Comment = ItemName;
+				IVrw.Objects = Object;
+				IVrw.VATCode = VATCode;
+				IVrw.Sum = RowSumExclVAT;
+				MatRowPut(IVr,0,IVrw);
+				VICalcVals(IVr);
+				VISumup(IVr,ct); 
+				RecordStore(IVr,true);
+				oldInvoiceNo = InvoiceNo;
+			end else begin
+				if InvoiceNo == oldInvoiceNo then begin
+					rwcnt = MatRowCnt(IVr);
+					RecordCopy(oldIVr,IVr);
+					IVrw.AccNumber = Account;
+					MatRowPut(IVr,rwcnt,IVrw);
+					if (VIVc_PasteAccNumber(IVr,"",1,rwcnt)) then begin
+					end;
+					MatRowGet(IVr,rwcnt,IVrw);
+					IVrw.Comment = ItemName;
+					IVrw.Objects = Object;
+					IVrw.VATCode = VATCode;
+					IVrw.Sum = RowSumExclVAT;
+					MatRowPut(IVr,rwcnt,IVrw);
+					VICalcVals(IVr);
+					VISumup(IVr,ct); 
+					RecordUpdate(oldIVr,IVr,false);
+				end else begin
+					RecordNew(IVr);
+					IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
+					CUr.Code = VECode;
+					if ReadFirstMain(CUr,1,true) then begin
+						IVr.VECode = CUr.Code;
+						if (VIVc_PasteVECode(IVr,0,false,false,warning)==false) then begin
+						end;
+					end else begin
+						IVr.VEName = VEName;
+					end;
+					paydeal = IVr.PayDeal;
+					IVr.CurncyCode = CurncyCode;
+					VIGetRate(IVr);
+					IVr.InvDate = InvDate;
+					IVr.TransDate = InvDate;
+					IVr.DueDate = DueDate;
+					IVr.InvoiceNr = InvoiceNo;
+					IVr.PayVal = Total;
+					VIVc_PastePayVal(IVr);
+					if blank(paydeal) then begin
+						IVr.PayDeal = VIb.VIPayDeal;
+					end else begin
+						IVr.PayDeal = paydeal;
+					end;
+					IVr.VATVal = TotalVAT;
+					IVrw.AccNumber = Account;
+					MatRowPut(IVr,0,IVrw);
+					if (VIVc_PasteAccNumber(IVr,"",1,0)) then begin
+					end;
+					MatRowGet(IVr,0,IVrw);
+					IVrw.Comment = ItemName;
+					IVrw.Objects = Object;
+					IVrw.VATCode = VATCode;
+					IVrw.Sum = RowSumExclVAT;
+					MatRowPut(IVr,0,IVrw);
+					VICalcVals(IVr);
+					VISumup(IVr,ct); 
+					RecordStore(IVr,true);
+					oldInvoiceNo = InvoiceNo;
+				end;
+			end;
+			skipf:;
+			testf = NextImportLine(true);
+		
+		end; 
+		CloseFile;
+		if movefile(filename,VIb.VIFilePath4,VIb.VIMovePath4) == 2 then begin 
+			Delete_File(VIb.VIMovePath4 & filename);
+			if movefile(filename,VIb.VIFilePath4,VIb.VIMovePath4) == 1 then begin end;
+		end;
+	end;
+  
+  
+return;
+end;
