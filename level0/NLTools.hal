@@ -21,17 +21,17 @@ begin
   res = false;
   if (simf==0) then begin end;
   if (simf==1) then begin
-    if ((rowsimstat==0) or (rowsimstat==3) or (rowsimstat==4)) then begin
+    if ((rowsimstat==kSimulationRowTypeActive) or (rowsimstat==kSimulationRowTypeYEStage1) or (rowsimstat==kSimulationRowTypeYEStage2)) then begin
       res = true;
     end;
   end;
   if (simf==2) then begin
-    if (rowsimstat==3) then begin
+    if (rowsimstat==kSimulationRowTypeYEStage1) then begin
       res = true;
     end;
   end;
   if (simf==3) then begin
-    if ((rowsimstat==3) or (rowsimstat==4)) then begin
+    if ((rowsimstat==kSimulationRowTypeYEStage1) or (rowsimstat==kSimulationRowTypeYEStage2)) then begin
       res = true;
     end;
   end;
@@ -77,7 +77,7 @@ BEGIN
   record RegArchiveDetailVc RADr;
   record BaseCurBlock bascur;  
   Boolean TrHs,skipf,testf;
-  Integer i,rwcnt;
+  Integer i,rwcnt,simstat;
   val fr,to1,to2,br1,br2;
   val curdv,curcv,v;
   Array string 20 objsarrs;
@@ -216,8 +216,10 @@ LTransactions:;
               rwcnt = MatRowCnt(SMr);
               for (i=0;i<rwcnt;i=i+1) begin
                 MatRowGet(SMr,i,SMrw);
+                simstat = SMrw.RowSimStat;
+                if (simstat==kSimulationRowTypeDefault) then begin simstat = SMr.SimStat; end;
                 if (SMrw.AccNumber==accstr) then begin
-                  if (IncludeSim(SMrw.RowSimStat,simf)) then begin
+                  if (IncludeSim(simstat,simf)) then begin
                     if (EobjInEobj(objstr,SMrw.Objects)) then begin
                       if (blank(crncycode)) then begin
                         switch (basecurncy) begin
@@ -267,35 +269,37 @@ LTransactions:;
           end;
         end;
       end;
-if (mainr.FileName=="FBVc") then begin
+      if (mainr.FileName=="FBVc") then begin
         FBr.SerNr = mainr.TransNr;
         if (ReadFirstMain(FBr,0,true)) then begin
           if (mainr.TransDate==FBr.TransDate) then begin
-	    testf = true;
-
-	    if (blank(objstr)) then begin//it should take FB without object only
-//              if (nonblank(FBr.Objects)) then begin testf = false; end;
-		testf = true; 
-	    end else begin
-	     if (EobjInEobj(objstr,FBr.Objects)==false) then begin testf = false; end; 
-//StopAlert("testf-po-EobjInEobj = " & testf);
-	    end;
-//            if (EobjInEobj(objstr,FBr.Objects)==false) then begin testf = false; end;
-//StopAlert("testf-po-visko = " & testf);
-	    if (testf) then begin
-//StopAlert("Pries FB dvp = " & dvp & "***cvp = " & cvp "***FBr.Objects = " & FBr.Objects);
-
-	      rwcnt = MatRowCnt(FBr);
+            testf = true;
+            if (blank(objstr)) then begin//it should take FB without object only
+              if (nonblank(FBr.Objects)) then begin testf = false; end;
+            end;
+            if (EobjInEobj(objstr,FBr.Objects)==false) then begin testf = false; end;
+            if (testf) then begin
+              rwcnt = MatRowCnt(FBr);
               for (i=0;i<rwcnt;i=i+1) begin
                 MatRowGet(FBr,i,FBrw);
                 if (FBrw.AccNumber==accstr) then begin
                   if (blank(crncycode)) then begin
-                      if (basecurncy==0) then begin
-                        dvp = dvp + FBrw.DebVal;
-                        cvp = cvp + FBrw.CredVal;
-                      end else begin
-                        dvp = dvp + FBrw.Deb2Val;
-                        cvp = cvp + FBrw.Cred2Val;
+                      switch (basecurncy) begin
+                        case kReportBCOne:
+                          dvp = dvp + FBrw.DebVal;
+                          cvp = cvp + FBrw.CredVal;
+                        case kReportBCTwo:
+                          dvp = dvp + FBrw.Deb2Val;
+                          cvp = cvp + FBrw.Cred2Val;
+                        case kReportBCOneConsolidationRate:
+                          MulM4OneRate(FBrw.DebVal,(to1/fr)*100,v,DefaultCurRoundOff,true);
+                          dvp = dvp + v;
+                          MulM4OneRate(FBrw.CredVal,(to1/fr)*100,v,DefaultCurRoundOff,true);
+                          cvp = cvp + v;
+/*
+                          dvp = dvp + MulRateToBase1(bascur.BaseCur1,FBrw.DebVal,fr,to1,to2,br1,br2,DefaultCurRoundOff);
+                          cvp = cvp + MulRateToBase1(bascur.BaseCur1,FBrw.CredVal,fr,to1,to2,br1,br2,DefaultCurRoundOff);
+*/
                       end;
                   end else begin
                     if (crncycode==FBrw.CurncyCode) then begin
@@ -388,9 +392,9 @@ BEGIN
 
   if (blankdate(bdp)) then begin goto LIncDaughter; end;
   if ((nonblank(gConsolidationDaughterCompany)) and (StringToInt(gConsolidationDaughterCompany)!=CurrentCompany))  then begin goto LIncDaughter; end;
-  //if (ocnt>1) then begin goto L8; end;
-    if (ocnt==1 or ocnt>1) then begin goto L8; end;
-  if (blank(objstr)) then begin goto L8; end;
+  //if (ocnt>1) then begin goto L8; end;//EBS
+    if (ocnt==1 or ocnt>1) then begin goto L8; end;//EBS
+  if (blank(objstr)) then begin goto L8; end;//EBS
   if (nonblank(crncycode)) then begin goto L8; end;
   if (blank(ObjBalr.AccNumber)) then begin goto L8; end;
   if (simf>1) then begin goto L8; end;

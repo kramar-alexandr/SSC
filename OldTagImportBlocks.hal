@@ -1,0 +1,51 @@
+global
+updating procedure ReadImportTagvatcode(string thetag)
+begin
+  record VATCodeBlock VATCoder;
+  row VATCodeBlock VATCoderw;
+  Integer i,rwcnt
+  
+  rwcnt = 0;
+  
+  while (NextImportLine(false)) begin
+    ClearRow(VATCoder,VATCoderw,1);
+    VATCoderw.VATCode = ImportField;
+    VATCoderw.Comment = ImportField;
+    VATCoderw.ExVatpr = StringToVal(ImportField,M423Val);
+    VATCoderw.IncVatpr = StringToVal(ImportField,M4Rate);
+    VATCoderw.SalesVATAcc = ImportField;
+    VATCoderw.PurchVATAcc = ImportField;
+    VATCoderw.Tax1pr = StringToVal(ImportField,M423Val);
+    VATCoderw.Tax1Acc = ImportField;
+    VATCoderw.PayPurchVATAcc = ImportField;
+    VATCoderw.PaySalesVATAcc = ImportField;
+    VATCoderw.ExcludeFromOfficial = StringToInt(ImportField);
+    VATCoderw.CorSalesVATAcc = ImportField;
+    VATCoderw.CorPurchVATAcc = ImportField;
+    VATCoderw.Tax1OppAcc = ImportField;
+    VATCoderw.Tax1Min = StringToVal(ImportField,M4Val);
+    VATCoderw.TaxRules = ImportField;
+    VATCoderw.CredSalesVATAcc = ImportField;
+    VATCoderw.CredPurchVATAcc = ImportField;
+    VATCoderw.InclinTotal = StringToInt(ImportField);
+    VATCoderw.TaxMatrixVariance = ImportField;
+    VATCoderw.ValidUntil = StringToDate(ImportField);
+    VATCoderw.HotelWIPAcc = ImportField;
+    VATCoderw.MinBaseAmount = StringToVal(ImportField,M4Val);
+    VATCoderw.MaxBaseAmount = StringToVal(ImportField,M4Val);
+    VATCoderw.CalcRule = StringToInt(ImportField);
+    VATCoderw.REDpr = StringToVal(ImportField,M423Val);
+    VATCoderw.STExVatpr = StringToVal(ImportField,M423Val);
+    //VATCoderw.MinRvrsVAT = StringToVal(ImportField,M4Val);
+    //VATCoderw.VATRateTier = ImportField;
+    //VATCoderw.TaxExemption = ImportField;
+    VATCoderw.VATCodeiSAF = ImportField;
+    VATCoderw.PURVATCodeiSAF = ImportField;
+    MatRowPut(VATCoder,rwcnt,VATCoderw);
+    rwcnt = rwcnt + 1;
+  end;
+  
+  BlockStore(VATCoder);
+  
+  return;
+end;

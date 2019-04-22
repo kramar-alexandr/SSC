@@ -234,6 +234,9 @@ begin
   ArrayField(CalcRule,M4Set,511,0);
   ArrayField(REDpr,M423Val,0,0);
   ArrayField(STExVatpr,M423Val,0,0);
+  ArrayField(MinRvrsVAT,M4Val,0,0);
+  ArrayField(VATRateTier,M4StrSet,633,0);
+  ArrayField(TaxExemption,M4Code,5,TaxExemptionsBlock);
   //start
   ArrayField(VATCodeiSAF,M4Str,60,0);
   ArrayField(PURVATCodeiSAF,M4Str,60,0);

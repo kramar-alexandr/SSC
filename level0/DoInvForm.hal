@@ -1,3 +1,6 @@
+external procedure PrintSignature(string);
+external outer procedure DoInvFormCustomizedFields(record IVVc,record DocVc,record SysFormatBlock,record RoundBlock,record LangNrVc,Boolean);
+
 external function string 50 TimeToString(time,string,boolean);
 external function string 255 SVNIVDigitalSeal(record IVVc,Integer);
 external procedure PrintPremiseData();
@@ -97,6 +100,7 @@ external procedure RecalcIVSubtotal(var record IVVc);
 external function string 255 SAFTHashControl(string);
 external function string 255 CreateInternationalCreditorReference(string);
 external function string 50 CreateBrazilEInvoiceId(record IVVc);
+external function string 255 OfficialNumberReformatFromSeries(string,string,string);
 
 procedure RebVal(record IVVc ivrp,record RoundBlock RoundRec,Integer base,var string res)
 BEGIN
@@ -755,7 +759,7 @@ BEGIN
   Integer tmp;
   string 255 tstr,tstr1;
   val v,t,t1,t2,t3,t4;
-  val totinprice,totweight,totvolume,totcombase2sum,totqty,totqty2,totfifo,totcombase2vat,totwithh,totnormwinttax,totnormwithvatprc;
+  val totinprice,totweight,totnetweight,totvolume,totcombase2sum,totqty,totqty2,totfifo,totcombase2vat,totwithh,totnormwinttax,totnormwithvatprc;
   val totdiscount;
   Date td;
   record RoundBlock RoundRec; 
@@ -834,6 +838,20 @@ BEGIN
   if (HasLocalization("PRT") and (CUr.CustType==1)) then begin    
     OUTFORMFIELD("F_CUSTTYPE",USetStr(23361));
   end;
+  tstr = "";//EBS
+  switch (CYb.VATIndicator) begin
+    case kVATIndicatorInvoice:
+      switch (CUr.CustType) begin
+        case 0:  tstr = "R1";
+        case 1:  tstr = "";
+      end;
+    case kVATIndicatorReceipt:
+      switch (CUr.CustType) begin
+        case 0:  tstr = "R2";
+        case 1:  tstr = "";
+      end;
+  end;
+  OUTFORMFIELD("F_VATINDICATOR",tstr);//EBS
   
   
   if (IVr.Prntdf==0) then begin
@@ -1197,8 +1215,19 @@ BEGIN
   OUTFORMFIELD("F_TEXT",PRr.Text9);  
   OUTFORMFIELD("F_ARGINVNUMBER",CreateInvoiceNumber(IVr.SerNr,IVr.OfficialSerNr));  
   if (HasLocalization("PRT")) then begin
+    tstr = USetStr(17250);
+    switch (IVr.InvType) begin
+      case kInvoiceTypeNormal: tstr = USetStr(17250);
+      case kInvoiceTypeCash: tstr = USetStr(17251);
+      case kInvoiceTypeCashInvoiceReceiptPRT: tstr = USetStr(17269);
+      case kInvoiceTypeCredit: tstr = USetStr(17252);
+      case kInvoiceTypeInterest: tstr = USetStr(17253);
+      case kInvoiceTypeDebit: tstr = USetStr(17253);
+      case kInvoiceTypeNormalSpecialSales: tstr = USetStr(17250);
+      case kInvoiceTypeCreditSpecialSales: tstr = USetStr(17252);
+    end;
     GetLegalInvNrRow(IVr.OfficialSerNr,LINrbrw);
-    OUTFORMFIELD("F_OFFICIALSERNO",GetOffSerNrIVJournalID(IVr.SerNr,"IVVc",IVr.OfficialSerNr) & " " & Left(IVr.OfficialSerNr,len(LINrbrw.Serie)) & "/" & Right(IVr.OfficialSerNr,len(IVr.OfficialSerNr)-len(LINrbrw.Serie)));
+    OUTFORMFIELD("F_OFFICIALSERNO",tstr & " " & OfficialNumberReformatFromSeries(IVr.OfficialSerNr,IVr.OfficialSerNrSerie,"/"));
   end else begin
     if (nonblank(IVr.OfficialSerNr2)) then begin
       OUTFORMFIELD("F_OFFICIALSERNO",IVr.OfficialSerNr2);
@@ -1247,7 +1276,11 @@ BEGIN
     GetFindCustBalance(IVr.CustCode,-1,t1,t,t2,t3,0,0,0,0,0,0,false,limitdaysf);
     PrintValue("F_SALDO",t-t3,M4Val,LangNrr,SysFormatRec,negamountf);
   end;
-  OUTFORMFIELD("F_REGNUMBER1",CUr.RegNr1);  
+  if (blank(IVr.RegNr1)) then begin
+    OUTFORMFIELD("F_REGNUMBER1",CUr.RegNr1);      
+  end else begin
+    OUTFORMFIELD("F_REGNUMBER1",IVr.RegNr1);      
+  end;
   OUTFORMFIELD("F_REGNUMBER2",CUr.RegNr2);  
   if (blank(IVr.Phone)) then begin
     OUTFORMFIELD("F_KUNDTEL",CUr.Phone);      
@@ -1286,15 +1319,45 @@ BEGIN
     ContactCUr.Code = Userr.CustCode;//salesman
     ReadFirstMain(ContactCUr,1,true);
 
-    tstr = StripNonDigits(CYb.VATNr) & DateToString(IVr.TransDate,"YYYY-MM-DD") & "T" & TimeToString(IVr.TransTime,"HH:MM:SS",false);
-    tstr = tstr & StringToLongInt(Right(IVr.OfficialSerNr,len(IVr.OfficialSerNr)-len(IVr.OfficialSerNrSerie)));
-    tstr = tstr & IVr.BranchID;
-    tstr = tstr & IVr.MachineName;
-    tstr = tstr & ValToString(IVr.Sum4,M4Val,"",".",0);
-    tstr = tstr & ContactCUr.VATNr;
-    tstr = DateToString(IVr.TransDate,"YYMMDD") & TimeToString(IVr.TransTime,"HHMMSS",false);
+    tstr1 = SVNIVDigitalSeal(IVr,0);
+    OUTFORMFIELD("F_DIGITALSEAL",tstr1);
+    
+    tstr = HexStringToDecimalString(tstr1);
+    tstr = tstr & StripNonDigits(ContactCUr.VATNr);//CYb.VATNr
+    tstr = tstr & DateToString(IVr.TransDate,"YYMMDD") & TimeToString(IVr.TransTime,"HHMMSS",false);
 
-    OUTFORMFIELD("F_SVNINVOICEBARCODE128",tstr);
+    posa = 0;
+    for (i=0;i<len(tstr);i=i+1) begin
+      posa = posa + asc(Mid(tstr,i,1)) - asc("0");  //48;
+    end;  
+    posa = Mod(posa,10);
+    tstr = tstr & posa;
+    
+    GetFieldArgument(Docr,F_SVNINVOICEBARCODE128,tstr1);
+    tmp = StringToInt(tstr1);
+    if (tmp>0) then begin
+      rwcnt = len(tstr)/tmp;
+      if (rwcnt==3) then begin
+        tstr1 = Mid(tstr,0,20);
+        OUTFORMFIELD("F_SVNINVOICEBARCODE128","41" & tstr1);
+        tstr1 = Mid(tstr,20,20);
+        OUTFORMFIELD("F_SVNINVOICEBARCODE128","42" & tstr1);
+        tstr1 = Mid(tstr,40,20);
+        OUTFORMFIELD("F_SVNINVOICEBARCODE128","43" & tstr1);
+      end;
+      if (rwcnt==4) then begin
+        tstr1 = Mid(tstr,0,15);
+        OUTFORMFIELD("F_SVNINVOICEBARCODE128","441" & tstr1);
+        tstr1 = Mid(tstr,15,15);
+        OUTFORMFIELD("F_SVNINVOICEBARCODE128","442" & tstr1);
+        tstr1 = Mid(tstr,30,15);
+        OUTFORMFIELD("F_SVNINVOICEBARCODE128","443" & tstr1);
+        tstr1 = Mid(tstr,45,15);
+        OUTFORMFIELD("F_SVNINVOICEBARCODE128","444" & tstr1);
+      end;
+    end else begin
+      OUTFORMFIELD("F_SVNINVOICEBARCODE128",tstr);
+    end;
     OUTFORMFIELD("F_SVNINVOICEQRCODE",tstr);
 
     OUTFORMFIELD("F_DIGITALSEAL",SVNIVDigitalSeal(IVr,0));
@@ -1441,8 +1504,10 @@ BEGIN
   OUTFORMFIELD("F_BASERATE",tstr);
   if (blank(IVr.OrgCust)) then begin
     OUTFORMFIELD("F_ORGCUSTNR",ORr.CustCode);      
+    OUTFORMFIELD("F_KUNDMOMSNRORGCUST",ORr.VATNr);      
   end else begin
     OUTFORMFIELD("F_ORGCUSTNR",IVr.OrgCust);      
+    OUTFORMFIELD("F_KUNDMOMSNRORGCUST",OrderingCUr.VATNr);      
   end;      
   if (blank(IVr.OrgCust)) then begin
     OUTFORMFIELD("F_ORGCUSTNAME",ORr.Addr0);      
@@ -1620,6 +1685,7 @@ BEGIN
   end;
   OUTFORMFIELD("F_DELSITECODE",IVr.DeliverySiteCode);
   OUTFORMFIELD("F_WORKSITENR",IVr.WorkSiteNumber);
+  PrintSignature(IVr.Sign);  
   if (blank(IVr.OrgCust)) then begin
     if (lastSHr.SerNr!=-1) then begin
 /*    
@@ -1729,10 +1795,39 @@ BEGIN
     end;
     PrintValue("F_BASE2BETALA",t,valtyp,LangNrr,SysFormatRec,negamountf);
   end;
+  
+  PrintValue("F_REVERSEVATAMOUNT",IVr.RvrsVAT,M4Val,LangNrr,SysFormatRec,negamountf);
+  if (blank(IVr.RvrsVAT)==false) then begin
+    if (HasLocalization("POL")) then begin
+      OUTFORMFIELD("F_REVERSEVATTEXT",USetStr(39371));
+    end;
+    if (HasLocalization("LTU")) then begin
+      if (nonblank(IVr.RvrsVAT) and blank(IVr.Sum3)) then begin
+        OUTFORMFIELD("F_REVERSEVATTEXT",USetStr(39371));
+      end;
+    end;
+    if (HasLocalization("GBR")) then begin
+      if (nonblank(IVr.RvrsVAT) and blank(IVr.Sum3)) then begin
+        if (IVr.InvType==kInvoiceTypeCredit) then begin
+          OUTFORMFIELD("F_REVERSEVATTEXT",USetStr(39373));
+        end else begin
+          OUTFORMFIELD("F_REVERSEVATTEXT",USetStr(39372));
+        end;
+      end else begin
+        if (IVr.InvType==kInvoiceTypeCredit) then begin
+          OUTFORMFIELD("F_REVERSEVATTEXT",USetStr(39375));
+        end else begin
+          OUTFORMFIELD("F_REVERSEVATTEXT",USetStr(39374));
+        end;
+      end;
+    end;
+  end;
+
   PrintValue("F_AVRUNDNING",IVr.Sum0,M4Val,LangNrr,SysFormatRec,negamountf);
   PrintValue("F_SUMFREIGHT",IVr.Sum1-IVr.FrPrice,M4Val,LangNrr,SysFormatRec,negamountf);
   PrintValue("F_TAX1",IVr.TAX1Sum,M4Val,LangNrr,SysFormatRec,negamountf);
-  PrintValue("F_SUMMAMOMS",IVr.Sum4-IVr.Sum3,M4Val,LangNrr,SysFormatRec,negamountf);
+  PrintValue("F_SUMMAMOMS",IVr.Sum3,M4Val,LangNrr,SysFormatRec,negamountf);
+//  PrintValue("F_SUMMAMOMS",IVr.Sum4-IVr.Sum3,M4Val,LangNrr,SysFormatRec,negamountf);
   PrintValue("F_FRAKT",IVr.FrPrice,M4Val,LangNrr,SysFormatRec,negamountf);
 //  PrintValue("F_SUMMAEJMOMS",IVr.Sum2,M4Val,LangNrr,SysFormatRec,negamountf); // What is Sum2?? Using this field for something on row that actually prints something :)
   PrintValue("F_TOPAYEXCLFREIGHT",IVr.Sum1-IVr.FrPrice+IVr.Sum3,M4Val,LangNrr,SysFormatRec,negamountf);
@@ -1780,7 +1875,8 @@ BEGIN
   if ((IVr.InvType==kInvoiceTypeNormal or IVr.InvType==kInvoiceTypeNormalSpecialSales) or (IVr.InvType==kInvoiceTypeDownpayment)) then begin
     if (FIELDINFORM("F_KASSABETALA")) then begin
       RebPay_IV(IVr,RoundRec,0,false,t);
-      OUTFORMFIELD("F_KASSABETALA",t);  
+//      OUTFORMFIELD("F_KASSABETALA",t);  
+      PrintValue("F_KASSABETALA",t,M4Val,LangNrr,SysFormatRec,negamountf);
     end;
     if (FIELDINFORM("F_KASSABETALA1")) then begin
       RebPay_IV(IVr,RoundRec,1,false,t);
@@ -1792,7 +1888,8 @@ BEGIN
     end;
     if (FIELDINFORM("F_KASSARABATT")) then begin
       RebPay_IV(IVr,RoundRec,0,true,t);
-      OUTFORMFIELD("F_KASSARABATT",t);  
+//      OUTFORMFIELD("F_KASSARABATT",t);  
+      PrintValue("F_KASSARABATT",t,M4Val,LangNrr,SysFormatRec,negamountf);
     end;
     if (FIELDINFORM("F_KASSARABATT1")) then begin
       RebPay_IV(IVr,RoundRec,1,true,t);
@@ -1840,6 +1937,7 @@ BEGIN
   CalcIVTotals(IVr,Docr,RoundRec,LangNrr,SysFormatRec);
   PrintValue("F_TOTVOLUME",totvolume,M4Qty,LangNrr,SysFormatRec,negamountf);
   PrintValue("F_TOTWEIGHT",totweight,M4Qty,LangNrr,SysFormatRec,negamountf);
+  PrintValue("F_TOTNETWEIGHT",totnetweight,M4Qty,LangNrr,SysFormatRec,negamountf);
   PrintValue("F_DISCSUMTOT",totdiscount,M4Val,LangNrr,SysFormatRec,negamountf);
   t = MulRateToBase1(IVr.CurncyCode,totdiscount,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2,DefaultCurRoundOff);
   PrintValue("F_DISCSUMTOTBC1",t,M4Val,LangNrr,SysFormatRec,negamountf);
@@ -2064,6 +2162,7 @@ BEGIN
   PrintFINREF(IVr,Docr);
   IVSetFax(CUr,IVr);
   PrintFreightInfo(IVr.FreightCode);
+  DoInvFormCustomizedFields(IVr,Docr,SysFormatRec,RoundRec,LangNrr,negamountf);
   if (PreviewFlag==false) then begin
     transaction Boolean gIVCreateAndAttachPdf;
     queued.SetPrintedFlag_IVVc2(IVr.SerNr,gIVCreateAndAttachPdf==false);
