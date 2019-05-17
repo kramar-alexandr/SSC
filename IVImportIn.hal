@@ -56,9 +56,11 @@ begin
 	if FileExists(VIb.IVFilePath & filename) and nonblank(filename) then begin
 		SetCompany(5,false);
 		OpenFile(VIb.IVFilePath & filename);
+		logtext(0,"OpenFile " & VIb.IVFilePath & filename);
 		while (testf) begin
 			VEName = "";
 			VEName = ImportField;
+			logtext(0,"VEName " & VEName);
 			if nonblank(VEName) then begin
 				RecordNew(IVr);
 				VECode = ImportField;
@@ -99,6 +101,7 @@ begin
 				IVr.DelAddr4 = ImportField;
 				rownr = 0;
 				RecordStore(IVr,false);
+				logtext(0,"Created IV " & IVr.SerNr);
 			end else begin
 				RecordCopy(oldIVr,IVr);
 				bz = ImportField;
@@ -131,12 +134,19 @@ begin
 				IVr.Sum4 = Total;
 				rownr = rownr +1;
 				RecordUpdate(oldIVr,IVr,false);
+				logtext(0,"Updated IV " & IVr.SerNr);
 			end;
 			
 			testf = NextImportLine(true);
 		
 		end; 
 		CloseFile;
+		if(right(VIb.IVFilePath,1)=="/")then begin
+			VIb.IVFilePath = left(VIb.IVFilePath,len(VIb.IVFilePath)-1);
+		end;
+		if(right(VIb.IVMovePath,1)=="/")then begin
+			VIb.IVMovePath = left(VIb.IVMovePath,len(VIb.IVMovePath)-1);
+		end;
 		if movefile(filename,VIb.IVFilePath,VIb.IVMovePath) == 2 then begin 
 			Delete_File(VIb.IVMovePath & filename);
 			if movefile(filename,VIb.IVFilePath,VIb.IVMovePath) == 1 then begin end;
@@ -149,9 +159,11 @@ begin
 	if FileExists(VIb.IVFilePathKL & filename) and nonblank(filename) then begin
 		SetCompany(2,false);
 		OpenFile(VIb.IVFilePathKL & filename);
+		logtext(0,"OpenFile " & VIb.IVFilePathKL & filename);
 		while (testf) begin
 			VEName = "";
 			VEName = ImportField;
+			logtext(0,"VEName " & VEName);
 			if nonblank(VEName) then begin
 				RecordNew(IVr);
 				VECode = ImportField;
@@ -192,6 +204,7 @@ begin
 				IVr.DelAddr4 = ImportField;
 				rownr = 0;
 				RecordStore(IVr,false);
+				logtext(0,"Created IV " & IVr.SerNr);
 			end else begin
 				RecordCopy(oldIVr,IVr);
 				bz = ImportField;
@@ -224,12 +237,19 @@ begin
 				IVr.Sum4 = Total;
 				rownr = rownr +1;
 				RecordUpdate(oldIVr,IVr,false);
+				logtext(0,"Updated IV " & IVr.SerNr);
 			end;
 			
 			testf = NextImportLine(true);
 		
 		end; 
 		CloseFile;
+		if(right(VIb.IVFilePathKL,1)=="/")then begin
+			VIb.IVFilePathKL = left(VIb.IVFilePathKL,len(VIb.IVFilePathKL)-1);
+		end;
+		if(right(VIb.IVMovePathKL,1)=="/")then begin
+			VIb.IVMovePathKL = left(VIb.IVMovePathKL,len(VIb.IVMovePathKL)-1);
+		end;
 		if movefile(filename,VIb.IVFilePathKL,VIb.IVMovePathKL) == 2 then begin 
 			Delete_File(VIb.IVMovePathKL & filename);
 			if movefile(filename,VIb.IVFilePathKL,VIb.IVMovePathKL) == 1 then begin end;
@@ -244,9 +264,11 @@ begin
 	if FileExists(VIb.IVFilePath1 & filename) and nonblank(filename) then begin
 		SetCompany(1,false);
 		OpenFile(VIb.IVFilePath1 & filename);
+		logtext(0,"OpenFile " & VIb.IVFilePath1 & filename);
 		while (testf) begin
 			VEName = "";
 			VEName = ImportField;
+			logtext(0,"VEName " & VEName);
 			if nonblank(VEName) then begin
 				RecordNew(IVr);
 				VECode = ImportField;
@@ -287,6 +309,7 @@ begin
 				IVr.DelAddr4 = ImportField;
 				rownr = 0;
 				RecordStore(IVr,false);
+				logtext(0,"Created IV " & IVr.SerNr);
 			end else begin
 				RecordCopy(oldIVr,IVr);
 				bz = ImportField;
@@ -319,12 +342,19 @@ begin
 				IVr.Sum4 = Total;
 				rownr = rownr +1;
 				RecordUpdate(oldIVr,IVr,false);
+				logtext(0,"Updated IV " & IVr.SerNr);
 			end;
 			
 			testf = NextImportLine(true);
 		
 		end; 
 		CloseFile;
+		if(right(VIb.IVFilePath1,1)=="/")then begin
+			VIb.IVFilePath1 = left(VIb.IVFilePath1,len(VIb.IVFilePath1)-1);
+		end;
+		if(right(VIb.IVMovePath1,1)=="/")then begin
+			VIb.IVMovePath1 = left(VIb.IVMovePath1,len(VIb.IVMovePath1)-1);
+		end;
 		if movefile(filename,VIb.IVFilePath1,VIb.IVMovePath1) == 2 then begin 
 			Delete_File(VIb.IVMovePath1 & filename);
 			if movefile(filename,VIb.IVFilePath1,VIb.IVMovePath1) == 1 then begin end;
@@ -338,9 +368,11 @@ begin
 	if FileExists(VIb.IVFilePath4 & filename) and nonblank(filename) then begin
 		SetCompany(6,false);
 		OpenFile(VIb.IVFilePath4 & filename);
+		logtext(0,"OpenFile " & VIb.IVFilePath4 & filename);
 		while (testf) begin
 			VEName = "";
 			VEName = ImportField;
+			logtext(0,"VEName " & VEName);
 			if nonblank(VEName) then begin
 				RecordNew(IVr);
 				VECode = ImportField;
@@ -381,6 +413,7 @@ begin
 				IVr.DelAddr4 = ImportField;
 				rownr = 0;
 				RecordStore(IVr,false);
+				logtext(0,"Created IV " & IVr.SerNr);
 			end else begin
 				RecordCopy(oldIVr,IVr);
 				bz = ImportField;
@@ -413,12 +446,19 @@ begin
 				IVr.Sum4 = Total;
 				rownr = rownr +1;
 				RecordUpdate(oldIVr,IVr,false);
+				logtext(0,"Updated IV " & IVr.SerNr);
 			end;
 			
 			testf = NextImportLine(true);
 		
 		end; 
 		CloseFile;
+		if(right(VIb.IVFilePath4,1)=="/")then begin
+			VIb.IVFilePath4 = left(VIb.IVFilePath4,len(VIb.IVFilePath4)-1);
+		end;
+		if(right(VIb.IVMovePath4,1)=="/")then begin
+			VIb.IVMovePath4 = left(VIb.IVMovePath4,len(VIb.IVMovePath4)-1);
+		end;
 		if movefile(filename,VIb.IVFilePath4,VIb.IVMovePath4) == 2 then begin 
 			Delete_File(VIb.IVMovePath4 & filename);
 			if movefile(filename,VIb.IVFilePath4,VIb.IVMovePath4) == 1 then begin end;
