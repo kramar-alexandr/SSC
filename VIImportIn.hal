@@ -90,6 +90,7 @@ begin
 				VICalcVals(IVr);
 				VISumup(IVr,ct); 
 				RecordStore(IVr,true);
+Logtext(0,"Created VI " & IVr.SerNr);
 				oldInvoiceNo = InvoiceNo;
 			end else begin
 				if InvoiceNo == oldInvoiceNo then begin
@@ -108,6 +109,7 @@ begin
 					VICalcVals(IVr);
 					VISumup(IVr,ct); 
 					RecordUpdate(oldIVr,IVr,false);
+Logtext(0,"Created VI " & IVr.SerNr);
 				end else begin
 					RecordNew(IVr);
 					IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
@@ -147,6 +149,7 @@ begin
 					VICalcVals(IVr);
 					VISumup(IVr,ct); 
 					RecordStore(IVr,true);
+Logtext(0,"Created VI " & IVr.SerNr);
 					oldInvoiceNo = InvoiceNo;
 				end;
 			end;
@@ -232,6 +235,7 @@ begin
 				VICalcVals(IVr);
 				VISumup(IVr,ct); 
 				RecordStore(IVr,true);
+Logtext(0,"Created VI " & IVr.SerNr);
 				oldInvoiceNo = InvoiceNo;
 			end else begin
 				if InvoiceNo == oldInvoiceNo then begin
@@ -250,6 +254,7 @@ begin
 					VICalcVals(IVr);
 					VISumup(IVr,ct); 
 					RecordUpdate(oldIVr,IVr,false);
+Logtext(0,"Created VI " & IVr.SerNr);
 				end else begin
 					RecordNew(IVr);
 					IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
@@ -289,6 +294,7 @@ begin
 					VICalcVals(IVr);
 					VISumup(IVr,ct); 
 					RecordStore(IVr,true);
+Logtext(0,"Created VI " & IVr.SerNr);
 					oldInvoiceNo = InvoiceNo;
 				end;
 			end;
@@ -376,6 +382,7 @@ begin
 				VICalcVals(IVr);
 				VISumup(IVr,ct); 
 				RecordStore(IVr,true);
+Logtext(0,"Created VI " & IVr.SerNr);
 				oldInvoiceNo = InvoiceNo;
 			end else begin
 				if InvoiceNo == oldInvoiceNo then begin
@@ -394,6 +401,7 @@ begin
 					VICalcVals(IVr);
 					VISumup(IVr,ct); 
 					RecordUpdate(oldIVr,IVr,false);
+Logtext(0,"Created VI " & IVr.SerNr);
 				end else begin
 					RecordNew(IVr);
 					IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
@@ -433,6 +441,7 @@ begin
 					VICalcVals(IVr);
 					VISumup(IVr,ct); 
 					RecordStore(IVr,true);
+Logtext(0,"Created VI " & IVr.SerNr);
 					oldInvoiceNo = InvoiceNo;
 				end;
 			end;
@@ -520,6 +529,7 @@ begin
 				VICalcVals(IVr);
 				VISumup(IVr,ct); 
 				RecordStore(IVr,true);
+Logtext(0,"Created VI " & IVr.SerNr);
 				oldInvoiceNo = InvoiceNo;
 			end else begin
 				if InvoiceNo == oldInvoiceNo then begin
@@ -538,6 +548,7 @@ begin
 					VICalcVals(IVr);
 					VISumup(IVr,ct); 
 					RecordUpdate(oldIVr,IVr,false);
+Logtext(0,"Created VI " & IVr.SerNr);
 				end else begin
 					RecordNew(IVr);
 					IVr.SerNr = NextSerNr("VIVc",InvDate,-1,false,"");
@@ -577,6 +588,7 @@ begin
 					VICalcVals(IVr);
 					VISumup(IVr,ct); 
 					RecordStore(IVr,true);
+Logtext(0,"Created VI " & IVr.SerNr);
 					oldInvoiceNo = InvoiceNo;
 				end;
 			end;
