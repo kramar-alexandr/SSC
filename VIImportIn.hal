@@ -28,6 +28,12 @@ begin
 	OldInvoiceNo = "";
 	testf = true; 
 	filename = FileNameFromFolder(VIb.VIFilePath,"");
+	if(filename=="..")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
+		filename = "";
+	end;
+	if(filename==".")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
+		filename = "";
+	end;
 	if FileExists(VIb.VIFilePath & filename) and nonblank(filename) then begin
 		SetCompany(5,false);
 		OpenFile(VIb.VIFilePath & filename);
@@ -149,6 +155,12 @@ begin
 		
 		end; 
 		CloseFile;
+		if(right(VIb.VIFilePath,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:55:23 PM
+			VIb.VIFilePath = left(VIb.VIFilePath,len(VIb.VIFilePath)-1);
+		end;
+		if(right(VIb.VIMovePath,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:55:26 PM
+			VIb.VIMovePath = left(VIb.VIMovePath,len(VIb.VIMovePath)-1);
+		end;
 		if movefile(filename,VIb.VIFilePath,VIb.VIMovePath) == 2 then begin 
 			Delete_File(VIb.VIMovePath & filename);
 			if movefile(filename,VIb.VIFilePath,VIb.VIMovePath) == 1 then begin end;
@@ -158,6 +170,12 @@ begin
 	OldInvoiceNo = "";
 	testf = true; 
 	filename = FileNameFromFolder(VIb.VIFilePathKL,"");
+	if(filename=="..")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
+		filename = "";
+	end;
+	if(filename==".")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
+		filename = "";
+	end;
 	if FileExists(VIb.VIFilePathKL & filename) and nonblank(filename) then begin
 		SetCompany(2,false);
 		OpenFile(VIb.VIFilePathKL & filename);
@@ -279,6 +297,12 @@ begin
 		
 		end; 
 		CloseFile;
+		if(right(VIb.VIFilePathKL,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:55:23 PM
+			VIb.VIFilePathKL = left(VIb.VIFilePathKL,len(VIb.VIFilePathKL)-1);
+		end;
+		if(right(VIb.VIMovePathKL,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:55:26 PM
+			VIb.VIMovePathKL = left(VIb.VIMovePathKL,len(VIb.VIMovePathKL)-1);
+		end;
 		if movefile(filename,VIb.VIFilePathKL,VIb.VIMovePathKL) == 2 then begin 
 			Delete_File(VIb.VIMovePathKL & filename);
 			if movefile(filename,VIb.VIFilePathKL,VIb.VIMovePathKL) == 1 then begin end;
@@ -290,6 +314,12 @@ begin
 	OldInvoiceNo = "";
 	testf = true; 
 	filename = FileNameFromFolder(VIb.VIFilePath1,"");
+	if(filename=="..")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
+		filename = "";
+	end;
+	if(filename==".")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
+		filename = "";
+	end;
 	if FileExists(VIb.VIFilePath1 & filename) and nonblank(filename) then begin
 		SetCompany(1,false);
 		OpenFile(VIb.VIFilePath1 & filename);
@@ -411,6 +441,12 @@ begin
 		
 		end; 
 		CloseFile;
+		if(right(VIb.VIFilePath1,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:55:23 PM
+			VIb.VIFilePath1 = left(VIb.VIFilePath1,len(VIb.VIFilePath1)-1);
+		end;
+		if(right(VIb.VIMovePath1,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:55:26 PM
+			VIb.VIMovePath1 = left(VIb.VIMovePath1,len(VIb.VIMovePath1)-1);
+		end;
 		if movefile(filename,VIb.VIFilePath1,VIb.VIMovePath1) == 2 then begin 
 			Delete_File(VIb.VIMovePath1 & filename);
 			if movefile(filename,VIb.VIFilePath1,VIb.VIMovePath1) == 1 then begin end;
@@ -422,6 +458,12 @@ begin
 	OldInvoiceNo = "";
 	testf = true; 
 	filename = FileNameFromFolder(VIb.VIFilePath4,"");
+	if(filename=="..")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
+		filename = "";
+	end;
+	if(filename==".")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
+		filename = "";
+	end;
 	if FileExists(VIb.VIFilePath4 & filename) and nonblank(filename) then begin
 		SetCompany(6,false);
 		OpenFile(VIb.VIFilePath4 & filename);
@@ -543,6 +585,13 @@ begin
 		
 		end; 
 		CloseFile;
+		
+		if(right(VIb.VIFilePath4,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:55:23 PM
+			VIb.VIFilePath4 = left(VIb.VIFilePath4,len(VIb.VIFilePath4)-1);
+		end;
+		if(right(VIb.VIMovePath4,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:55:26 PM
+			VIb.VIMovePath4 = left(VIb.VIMovePath4,len(VIb.VIMovePath4)-1);
+		end;
 		if movefile(filename,VIb.VIFilePath4,VIb.VIMovePath4) == 2 then begin 
 			Delete_File(VIb.VIMovePath4 & filename);
 			if movefile(filename,VIb.VIFilePath4,VIb.VIMovePath4) == 1 then begin end;

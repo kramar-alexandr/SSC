@@ -52,21 +52,18 @@ begin
 	blockload(VIb);
 	testf = true; 
 	filename = FileNameFromFolder(VIb.IVFilePath,"");
-	if(filename=="..")then begin
+	if(filename=="..")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 		filename = "";
 	end;
-	if(filename==".")then begin
+	if(filename==".")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 		filename = "";
 	end;
-	Logtext(0,"IVImportIn 5 " & filename);
 	if FileExists(VIb.IVFilePath & filename) and nonblank(filename) then begin
 		SetCompany(5,false);
 		OpenFile(VIb.IVFilePath & filename);
-		logtext(0,"OpenFile " & VIb.IVFilePath & filename);
 		while (testf) begin
 			VEName = "";
 			VEName = ImportField;
-			logtext(0,"VEName " & VEName);
 			if nonblank(VEName) then begin
 				RecordNew(IVr);
 				VECode = ImportField;
@@ -147,10 +144,10 @@ begin
 		
 		end; 
 		CloseFile;
-		if(right(VIb.IVFilePath,1)=="/")then begin
+		if(right(VIb.IVFilePath,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 			VIb.IVFilePath = left(VIb.IVFilePath,len(VIb.IVFilePath)-1);
 		end;
-		if(right(VIb.IVMovePath,1)=="/")then begin
+		if(right(VIb.IVMovePath,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 			VIb.IVMovePath = left(VIb.IVMovePath,len(VIb.IVMovePath)-1);
 		end;
 		if movefile(filename,VIb.IVFilePath,VIb.IVMovePath) == 2 then begin 
@@ -161,21 +158,18 @@ begin
   
 	testf = true; 
 	filename = FileNameFromFolder(VIb.IVFilePathKL,"");
-	if(filename=="..")then begin
+	if(filename=="..")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 		filename = "";
 	end;
-	if(filename==".")then begin
+	if(filename==".")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 		filename = "";
 	end;
-	Logtext(0,"IVImportIn 2 " & filename);
 	if FileExists(VIb.IVFilePathKL & filename) and nonblank(filename) then begin
 		SetCompany(2,false);
 		OpenFile(VIb.IVFilePathKL & filename);
-		logtext(0,"OpenFile " & VIb.IVFilePathKL & filename);
 		while (testf) begin
 			VEName = "";
 			VEName = ImportField;
-			logtext(0,"VEName " & VEName);
 			if nonblank(VEName) then begin
 				RecordNew(IVr);
 				VECode = ImportField;
@@ -256,10 +250,10 @@ begin
 		
 		end; 
 		CloseFile;
-		if(right(VIb.IVFilePathKL,1)=="/")then begin
+		if(right(VIb.IVFilePathKL,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 			VIb.IVFilePathKL = left(VIb.IVFilePathKL,len(VIb.IVFilePathKL)-1);
 		end;
-		if(right(VIb.IVMovePathKL,1)=="/")then begin
+		if(right(VIb.IVMovePathKL,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 			VIb.IVMovePathKL = left(VIb.IVMovePathKL,len(VIb.IVMovePathKL)-1);
 		end;
 		if movefile(filename,VIb.IVFilePathKL,VIb.IVMovePathKL) == 2 then begin 
@@ -272,21 +266,18 @@ begin
 	 
 	testf = true; 
 	filename = FileNameFromFolder(VIb.IVFilePath1,"");
-	if(filename=="..")then begin
+	if(filename=="..")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 		filename = "";
 	end;
-	if(filename==".")then begin
+	if(filename==".")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 		filename = "";
 	end;
-	Logtext(0,"IVImportIn 1 " & filename);
 	if FileExists(VIb.IVFilePath1 & filename) and nonblank(filename) then begin
 		SetCompany(1,false);
 		OpenFile(VIb.IVFilePath1 & filename);
-		logtext(0,"OpenFile " & VIb.IVFilePath1 & filename);
 		while (testf) begin
 			VEName = "";
 			VEName = ImportField;
-			logtext(0,"VEName " & VEName);
 			if nonblank(VEName) then begin
 				RecordNew(IVr);
 				VECode = ImportField;
@@ -367,10 +358,10 @@ begin
 		
 		end; 
 		CloseFile;
-		if(right(VIb.IVFilePath1,1)=="/")then begin
+		if(right(VIb.IVFilePath1,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 			VIb.IVFilePath1 = left(VIb.IVFilePath1,len(VIb.IVFilePath1)-1);
 		end;
-		if(right(VIb.IVMovePath1,1)=="/")then begin
+		if(right(VIb.IVMovePath1,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 			VIb.IVMovePath1 = left(VIb.IVMovePath1,len(VIb.IVMovePath1)-1);
 		end;
 		if movefile(filename,VIb.IVFilePath1,VIb.IVMovePath1) == 2 then begin 
@@ -382,21 +373,18 @@ begin
 
 	testf = true; 
 	filename = FileNameFromFolder(VIb.IVFilePath4,"");
-	if(filename=="..")then begin
+	if(filename=="..")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 		filename = "";
 	end;
-	if(filename==".")then begin
+	if(filename==".")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 		filename = "";
 	end;
-	Logtext(0,"IVImportIn 6 " & filename);
 	if FileExists(VIb.IVFilePath4 & filename) and nonblank(filename) then begin
 		SetCompany(6,false);
 		OpenFile(VIb.IVFilePath4 & filename);
-		logtext(0,"OpenFile " & VIb.IVFilePath4 & filename);
 		while (testf) begin
 			VEName = "";
 			VEName = ImportField;
-			logtext(0,"VEName " & VEName);
 			if nonblank(VEName) then begin
 				RecordNew(IVr);
 				VECode = ImportField;
@@ -477,10 +465,10 @@ begin
 		
 		end; 
 		CloseFile;
-		if(right(VIb.IVFilePath4,1)=="/")then begin
+		if(right(VIb.IVFilePath4,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:52:59 PM
 			VIb.IVFilePath4 = left(VIb.IVFilePath4,len(VIb.IVFilePath4)-1);
 		end;
-		if(right(VIb.IVMovePath4,1)=="/")then begin
+		if(right(VIb.IVMovePath4,1)=="/")then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 23 05 2019 y. at 3:53:12 PM
 			VIb.IVMovePath4 = left(VIb.IVMovePath4,len(VIb.IVMovePath4)-1);
 		end;
 		if movefile(filename,VIb.IVFilePath4,VIb.IVMovePath4) == 2 then begin 
