@@ -52,6 +52,12 @@ begin
 	blockload(VIb);
 	testf = true; 
 	filename = FileNameFromFolder(VIb.IVFilePath,"");
+	if(filename=="..")then begin
+		filename = "";
+	end;
+	if(filename==".")then begin
+		filename = "";
+	end;
 	Logtext(0,"IVImportIn 5 " & filename);
 	if FileExists(VIb.IVFilePath & filename) and nonblank(filename) then begin
 		SetCompany(5,false);
@@ -155,6 +161,12 @@ begin
   
 	testf = true; 
 	filename = FileNameFromFolder(VIb.IVFilePathKL,"");
+	if(filename=="..")then begin
+		filename = "";
+	end;
+	if(filename==".")then begin
+		filename = "";
+	end;
 	Logtext(0,"IVImportIn 2 " & filename);
 	if FileExists(VIb.IVFilePathKL & filename) and nonblank(filename) then begin
 		SetCompany(2,false);
@@ -260,6 +272,12 @@ begin
 	 
 	testf = true; 
 	filename = FileNameFromFolder(VIb.IVFilePath1,"");
+	if(filename=="..")then begin
+		filename = "";
+	end;
+	if(filename==".")then begin
+		filename = "";
+	end;
 	Logtext(0,"IVImportIn 1 " & filename);
 	if FileExists(VIb.IVFilePath1 & filename) and nonblank(filename) then begin
 		SetCompany(1,false);
@@ -364,6 +382,12 @@ begin
 
 	testf = true; 
 	filename = FileNameFromFolder(VIb.IVFilePath4,"");
+	if(filename=="..")then begin
+		filename = "";
+	end;
+	if(filename==".")then begin
+		filename = "";
+	end;
 	Logtext(0,"IVImportIn 6 " & filename);
 	if FileExists(VIb.IVFilePath4 & filename) and nonblank(filename) then begin
 		SetCompany(6,false);
